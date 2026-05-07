@@ -395,17 +395,20 @@ function Index() {
     setCoins((c) => c + 2);
     spawnParticles("🦴", 4); playSound("pop"); triggerBounce();
     progressMission("feed"); gainXp(3);
+    logAction("feed", "Alimentou o pet", { hunger: 10, coins: 2 });
   };
   const play = () => {
     setHappy((v) => Math.min(100, v + 10)); pulseStat("happy");
     setCoins((c) => c + 3);
     spawnParticles("❤️", 4); playSound("pop"); triggerBounce();
     progressMission("play"); gainXp(3);
+    logAction("play", "Brincou com o pet", { happy: 10, coins: 3 });
   };
   const wash = () => {
     setClean((v) => Math.min(100, v + 10)); pulseStat("clean");
     spawnParticles("💧", 4); playSound("pop"); triggerBounce();
     progressMission("wash"); gainXp(3);
+    logAction("wash", "Lavou o pet", { clean: 10 });
   };
 
   const buy = (item: Item) => {
@@ -417,6 +420,12 @@ function Index() {
     spawnParticles(item.icon, 6); playSound("buy"); triggerBounce();
     progressMission("buy"); gainXp(5);
     toast.success(`Comprou ${item.name}`, { description: `-${item.price} 🪙` });
+    logAction("buy", `Comprou ${item.name} ${item.icon}`, {
+      hunger: item.effect.hunger ?? 0,
+      happy: item.effect.happy ?? 0,
+      clean: item.effect.clean ?? 0,
+      coins: -item.price,
+    });
   };
 
   // ---------- RANDOM EVENTS ----------
