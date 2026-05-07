@@ -447,13 +447,15 @@ function Index() {
   const resolveEvent = (idx: number) => {
     if (!event) return;
     const opt = event.options[idx];
-    if (opt.effect.hunger) { setHunger((v) => clamp(v + opt.effect.hunger!)); pulseStat("hunger"); }
-    if (opt.effect.happy) { setHappy((v) => clamp(v + opt.effect.happy!)); pulseStat("happy"); }
-    if (opt.effect.clean) { setClean((v) => clamp(v + opt.effect.clean!)); pulseStat("clean"); }
-    if (opt.effect.coins) { setCoins((c) => Math.max(0, c + opt.effect.coins!)); playSound("coin"); }
+    const deltas = { hunger: 0, happy: 0, clean: 0, coins: 0 };
+    if (opt.effect.hunger) { setHunger((v) => clamp(v + opt.effect.hunger!)); pulseStat("hunger"); deltas.hunger = opt.effect.hunger; }
+    if (opt.effect.happy) { setHappy((v) => clamp(v + opt.effect.happy!)); pulseStat("happy"); deltas.happy = opt.effect.happy; }
+    if (opt.effect.clean) { setClean((v) => clamp(v + opt.effect.clean!)); pulseStat("clean"); deltas.clean = opt.effect.clean; }
+    if (opt.effect.coins) { setCoins((c) => Math.max(0, c + opt.effect.coins!)); playSound("coin"); deltas.coins = opt.effect.coins; }
     if (opt.effect.xp) gainXp(opt.effect.xp);
     spawnParticles(event.emoji, 5);
     toast(opt.toast);
+    logAction("event", `${event.emoji} ${event.title} → ${opt.label}`, deltas);
     setEvent(null);
   };
 
@@ -468,19 +470,43 @@ function Index() {
     toast.success("Save exportado!");
   };
 
+  const validateSave = (s: any): string | null => {
+    if (!s || typeof s !== "object") return "Arquivo não é um save válido.";
+    const isPct = (v: any) => typeof v === "number" && v >= 0 && v <= 100;
+    const isNonNeg = (v: any) => typeof v === "number" && v >= 0 && Number.isFinite(v);
+    if (!isPct(s.hunger)) return "Campo 'hunger' inválido (0-100).";
+    if (!isPct(s.happy)) return "Campo 'happy' inválido (0-100).";
+    if (!isPct(s.clean)) return "Campo 'clean' inválido (0-100).";
+    if (!isNonNeg(s.coins)) return "Campo 'coins' inválido.";
+    if (!isNonNeg(s.xp)) return "Campo 'xp' inválido.";
+    if (!isNonNeg(s.level) || s.level < 1) return "Campo 'level' inválido.";
+    if (s.missions && !Array.isArray(s.missions)) return "Campo 'missions' inválido.";
+    return null;
+  };
+
   const importSave = (file: File) => {
+    if (file.size > 256 * 1024) { toast.error("Arquivo muito grande"); return; }
     const reader = new FileReader();
     reader.onload = () => {
       try {
         const parsed = JSON.parse(reader.result as string);
-        applySave(parsed);
-        toast.success("Save importado!");
-        playSound("yay");
+        const err = validateSave(parsed);
+        if (err) { toast.error("Save inválido", { description: err }); return; }
+        setPendingImport(parsed);
       } catch {
-        toast.error("Arquivo inválido");
+        toast.error("Arquivo JSON inválido");
       }
     };
     reader.readAsText(file);
+  };
+
+  const confirmImport = () => {
+    if (!pendingImport) return;
+    applySave(pendingImport);
+    logAction("import", "Importou save de backup", { coins: (pendingImport.coins ?? 0) - coins });
+    toast.success("Save importado!");
+    playSound("yay");
+    setPendingImport(null);
   };
 
   const signOut = async () => { await supabase.auth.signOut(); toast("Sessão encerrada"); };
