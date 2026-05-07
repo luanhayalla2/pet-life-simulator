@@ -60,9 +60,13 @@ export type Database = {
           happy: number
           hunger: number
           last_care_date: string | null
+          level: number
+          missions: Json
+          missions_date: string | null
           pet_name: string
           updated_at: string
           user_id: string
+          xp: number
         }
         Insert: {
           achievements?: string[]
@@ -73,9 +77,13 @@ export type Database = {
           happy?: number
           hunger?: number
           last_care_date?: string | null
+          level?: number
+          missions?: Json
+          missions_date?: string | null
           pet_name?: string
           updated_at?: string
           user_id: string
+          xp?: number
         }
         Update: {
           achievements?: string[]
@@ -86,9 +94,13 @@ export type Database = {
           happy?: number
           hunger?: number
           last_care_date?: string | null
+          level?: number
+          missions?: Json
+          missions_date?: string | null
           pet_name?: string
           updated_at?: string
           user_id?: string
+          xp?: number
         }
         Relationships: []
       }
