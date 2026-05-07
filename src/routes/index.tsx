@@ -143,6 +143,10 @@ function Index() {
   const [particles, setParticles] = useState<Particle[]>([]);
   const [event, setEvent] = useState<RandomEvent | null>(null);
   const [statPulse, setStatPulse] = useState<string | null>(null);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [pendingImport, setPendingImport] = useState<any | null>(null);
+  const [claimedMissions, setClaimedMissions] = useState<Mission[]>([]);
+  const [showRewards, setShowRewards] = useState(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const lastEventRef = useRef<number>(Date.now());
