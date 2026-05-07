@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Heart, Coins, ShoppingBag, Sparkles, Bone, Gamepad2, Droplet, LogIn, LogOut, Trophy, Download, Upload, Zap } from "lucide-react";
+import { Heart, Coins, ShoppingBag, Sparkles, Bone, Gamepad2, Droplet, LogIn, LogOut, Trophy, Download, Upload, Zap, History as HistoryIcon, Gift, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import petImg from "@/assets/pet-mel.png";
 import { supabase } from "@/integrations/supabase/client";
