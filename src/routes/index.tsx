@@ -768,15 +768,104 @@ function Index() {
         </div>
       )}
 
+      {/* Import confirmation modal */}
+      {pendingImport && (
+        <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-sm rounded-3xl bg-card p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="mb-3 flex items-start gap-3">
+              <AlertTriangle className="h-6 w-6 shrink-0 text-reward" />
+              <div>
+                <h3 className="font-bold">Confirmar importação</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Isso vai sobrescrever seu progresso atual. Não tem como desfazer.
+                </p>
+              </div>
+            </div>
+            <div className="rounded-xl bg-muted/50 p-3 text-xs space-y-1">
+              <div className="flex justify-between"><span className="text-muted-foreground">Moedas</span><span className="font-semibold">{coins} → {pendingImport.coins}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Nível</span><span className="font-semibold">{level} → {pendingImport.level}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Fome</span><span className="font-semibold">{hunger} → {pendingImport.hunger}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Felicidade</span><span className="font-semibold">{happy} → {pendingImport.happy}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Limpeza</span><span className="font-semibold">{clean} → {pendingImport.clean}</span></div>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button onClick={() => setPendingImport(null)} className="rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-semibold active:scale-95">
+                Cancelar
+              </button>
+              <button onClick={confirmImport} className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground active:scale-95">
+                Sobrescrever
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rewards review modal */}
+      {showRewards && (
+        <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/50 px-4" onClick={() => setShowRewards(false)}>
+          <div className="w-full max-w-sm rounded-3xl bg-card p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-3 flex items-center gap-2">
+              <Gift className="h-5 w-5 text-reward" />
+              <h3 className="font-bold">Recompensas ganhas</h3>
+            </div>
+            {claimedMissions.length === 0 ? (
+              <p className="py-4 text-center text-sm text-muted-foreground">Nenhuma missão concluída ainda. Continue cuidando do seu pet!</p>
+            ) : (
+              <div className="max-h-80 space-y-2 overflow-y-auto">
+                {claimedMissions.map((m, i) => (
+                  <div key={`${m.id}_${i}`} className="flex items-center justify-between rounded-xl border border-money/30 bg-money/5 p-3 text-sm">
+                    <span className="font-semibold">✅ {m.label}</span>
+                    <span className="text-xs font-bold text-money">+{m.reward} 🪙 · +{m.xp} XP</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button onClick={() => setShowRewards(false)} className="mt-4 w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground active:scale-95">
+              Fechar
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Bottom nav */}
       <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-border bg-card/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-md items-center justify-around px-2 py-2">
+        <div className="mx-auto flex max-w-md items-center justify-around px-1 py-2">
           <NavBtn active={tab === "pet"} onClick={() => setTab("pet")} icon={<Heart />} label="Pet" />
           <NavBtn active={tab === "shop"} onClick={() => setTab("shop")} icon={<ShoppingBag />} label="Loja" />
           <NavBtn active={tab === "missions"} onClick={() => setTab("missions")} icon={<Trophy />} label="Missões" />
+          <NavBtn active={tab === "history"} onClick={() => setTab("history")} icon={<HistoryIcon />} label="Histórico" />
           <NavBtn active={tab === "life"} onClick={() => setTab("life")} icon={<Gamepad2 />} label="Vida" />
         </div>
       </nav>
+    </div>
+  );
+}
+
+function HistoryRow({ entry }: { entry: HistoryEntry }) {
+  const d = new Date(entry.created_at);
+  const date = d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+  const time = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  const deltas: { label: string; value: number; cls: string }[] = [
+    { label: "🦴", value: entry.hunger_delta, cls: "text-reward" },
+    { label: "❤️", value: entry.happy_delta, cls: "text-pet" },
+    { label: "💧", value: entry.clean_delta, cls: "text-primary" },
+    { label: "🪙", value: entry.coins_delta, cls: "text-money" },
+  ].filter((x) => x.value !== 0);
+  return (
+    <div className="rounded-2xl border border-border bg-card p-3">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold">{entry.label}</p>
+        <span className="text-[11px] text-muted-foreground tabular-nums">{date} · {time}</span>
+      </div>
+      {deltas.length > 0 && (
+        <div className="mt-1.5 flex flex-wrap gap-1.5 text-xs">
+          {deltas.map((x, i) => (
+            <span key={i} className={`rounded-full bg-muted px-2 py-0.5 font-semibold ${x.cls}`}>
+              {x.label} {x.value > 0 ? `+${x.value}` : x.value}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
