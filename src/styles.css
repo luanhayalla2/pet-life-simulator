@@ -161,3 +161,8 @@
     color: var(--color-foreground);
   }
 }
+
+@keyframes particle {
+  0% { opacity: 1; transform: translate(-50%, -50%) translateY(0) scale(0.5); }
+  100% { opacity: 0; transform: translate(-50%, -50%) translateY(-80px) scale(1.4); }
+}
