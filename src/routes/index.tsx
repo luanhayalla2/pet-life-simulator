@@ -15,7 +15,18 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-type Tab = "pet" | "shop" | "missions" | "life";
+type Tab = "pet" | "shop" | "missions" | "history" | "life";
+
+interface HistoryEntry {
+  id: string;
+  action: string;
+  label: string;
+  hunger_delta: number;
+  happy_delta: number;
+  clean_delta: number;
+  coins_delta: number;
+  created_at: string;
+}
 
 interface Item {
   id: string;
