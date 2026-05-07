@@ -624,9 +624,17 @@ function Index() {
         {tab === "missions" && (
           <section className="space-y-4">
             <div className="rounded-3xl bg-[var(--gradient-reward)] p-6 text-reward-foreground shadow-[var(--shadow-soft)]">
-              <div className="flex items-center gap-2">
-                <Trophy className="h-5 w-5" />
-                <h2 className="text-lg font-bold">Missões diárias</h2>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Trophy className="h-5 w-5" />
+                  <h2 className="text-lg font-bold">Missões diárias</h2>
+                </div>
+                <button
+                  onClick={() => setShowRewards(true)}
+                  className="flex items-center gap-1 rounded-full bg-white/40 px-3 py-1 text-xs font-bold active:scale-95"
+                >
+                  <Gift className="h-3.5 w-3.5" /> Recompensas
+                </button>
               </div>
               <p className="mt-1 text-xs opacity-80">Renovam ao trocar o dia</p>
               <div className="mt-3 flex items-center gap-3 text-sm">
@@ -638,21 +646,61 @@ function Index() {
                   <p className="mt-1 text-xs opacity-80">{xp} / {xpForLevel(level)} XP</p>
                 </div>
               </div>
+              <div className="mt-3 text-xs opacity-90">
+                {missions.filter((m) => m.done).length} / {missions.length} concluídas hoje
+              </div>
             </div>
             <div className="space-y-2">
-              {missions.map((m) => (
-                <div key={m.id} className={`rounded-2xl border border-border bg-card p-4 ${m.done ? "opacity-60" : ""}`}>
-                  <div className="flex items-center justify-between">
-                    <p className="font-semibold">{m.label}</p>
-                    <span className="text-xs font-bold text-money">+{m.reward} 🪙 · +{m.xp} XP</span>
+              {missions.map((m) => {
+                const pct = (m.progress / m.target) * 100;
+                return (
+                  <div
+                    key={m.id}
+                    className={`relative overflow-hidden rounded-2xl border p-4 transition-all ${m.done ? "border-money/40 bg-money/5" : "border-border bg-card"}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className={`font-semibold ${m.done ? "text-money" : ""}`}>
+                        {m.done && "✅ "}{m.label}
+                      </p>
+                      <span className="text-xs font-bold text-money">+{m.reward} 🪙 · +{m.xp} XP</span>
+                    </div>
+                    <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-muted">
+                      <div
+                        className={`h-full transition-all duration-500 ${m.done ? "bg-money" : "bg-primary"}`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <div className="mt-1 flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground tabular-nums">{m.progress} / {m.target}</span>
+                      {m.done && <span className="font-semibold text-money">Recompensa recebida 🎁</span>}
+                    </div>
                   </div>
-                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
-                    <div className="h-full bg-primary transition-all duration-500" style={{ width: `${(m.progress / m.target) * 100}%` }} />
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">{m.progress} / {m.target} {m.done && "✅"}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
+          </section>
+        )}
+
+        {tab === "history" && (
+          <section className="space-y-4">
+            <div className="rounded-3xl bg-[var(--gradient-hero)] p-6 text-primary-foreground shadow-[var(--shadow-soft)]">
+              <div className="flex items-center gap-2">
+                <HistoryIcon className="h-5 w-5" />
+                <h2 className="text-lg font-bold">Histórico</h2>
+              </div>
+              <p className="mt-1 text-sm opacity-90">Tudo o que você fez com {petName}</p>
+            </div>
+            {history.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+                Nenhuma atividade ainda. Comece a cuidar do seu pet!
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {history.map((h) => (
+                  <HistoryRow key={h.id} entry={h} />
+                ))}
+              </div>
+            )}
           </section>
         )}
 
