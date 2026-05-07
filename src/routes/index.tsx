@@ -355,16 +355,18 @@ function Index() {
       if (m.type !== type || m.done) return m;
       const np = m.progress + 1;
       const done = np >= m.target;
+      const updated = { ...m, progress: Math.min(np, m.target), done };
       if (done) {
         setTimeout(() => {
           setCoins((c) => c + m.reward);
           gainXp(m.xp);
           spawnParticles("⭐", 8);
           playSound("yay");
+          setClaimedMissions((cm) => [{ ...updated }, ...cm].slice(0, 50));
           toast.success(`Missão concluída: ${m.label}`, { description: `+${m.reward} 🪙 +${m.xp} XP` });
         }, 50);
       }
-      return { ...m, progress: Math.min(np, m.target), done };
+      return updated;
     }));
   };
 
