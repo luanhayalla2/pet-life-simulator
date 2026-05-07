@@ -275,6 +275,7 @@ function Index() {
     if (!userId) return;
     if (persistRef.current) clearTimeout(persistRef.current);
     persistRef.current = setTimeout(() => {
+      skipNextRealtimeRef.current = true;
       supabase.from("pet_progress").upsert({
         user_id: userId,
         coins, hunger, happy, clean,
