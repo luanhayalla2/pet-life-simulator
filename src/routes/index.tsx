@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Heart, Coins, ShoppingBag, Sparkles, Bone, Gamepad2, Droplet, LogIn, LogOut, Trophy, Download, Upload, Zap } from "lucide-react";
+import { Heart, Coins, ShoppingBag, Sparkles, Bone, Gamepad2, Droplet, LogIn, LogOut, Trophy, Download, Upload, Zap, History as HistoryIcon, Gift, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import petImg from "@/assets/pet-mel.png";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,7 +15,18 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-type Tab = "pet" | "shop" | "missions" | "life";
+type Tab = "pet" | "shop" | "missions" | "history" | "life";
+
+interface HistoryEntry {
+  id: string;
+  action: string;
+  label: string;
+  hunger_delta: number;
+  happy_delta: number;
+  clean_delta: number;
+  coins_delta: number;
+  created_at: string;
+}
 
 interface Item {
   id: string;
@@ -132,6 +143,10 @@ function Index() {
   const [particles, setParticles] = useState<Particle[]>([]);
   const [event, setEvent] = useState<RandomEvent | null>(null);
   const [statPulse, setStatPulse] = useState<string | null>(null);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [pendingImport, setPendingImport] = useState<any | null>(null);
+  const [claimedMissions, setClaimedMissions] = useState<Mission[]>([]);
+  const [showRewards, setShowRewards] = useState(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const lastEventRef = useRef<number>(Date.now());
@@ -150,6 +165,69 @@ function Index() {
     });
     return () => sub.subscription.unsubscribe();
   }, []);
+
+  // ---------- REALTIME SYNC ----------
+  const skipNextRealtimeRef = useRef(false);
+  useEffect(() => {
+    if (!userId) return;
+    loadHistory(userId);
+    const channel = supabase
+      .channel(`pet_progress_${userId}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "pet_progress", filter: `user_id=eq.${userId}` },
+        (payload) => {
+          if (skipNextRealtimeRef.current) { skipNextRealtimeRef.current = false; return; }
+          const d: any = payload.new;
+          applySave({
+            coins: d.coins, hunger: d.hunger, happy: d.happy, clean: d.clean,
+            xp: d.xp, level: d.level,
+            missions: Array.isArray(d.missions) ? d.missions : undefined,
+            missionsDate: d.missions_date,
+          });
+          toast("☁️ Save sincronizado de outro dispositivo");
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "activity_log", filter: `user_id=eq.${userId}` },
+        (payload) => setHistory((h) => [payload.new as HistoryEntry, ...h].slice(0, 100))
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [userId]);
+
+  const loadHistory = async (uid: string) => {
+    const { data } = await supabase
+      .from("activity_log")
+      .select("*")
+      .eq("user_id", uid)
+      .order("created_at", { ascending: false })
+      .limit(100);
+    if (data) setHistory(data as HistoryEntry[]);
+  };
+
+  const logAction = (action: string, label: string, deltas: { hunger?: number; happy?: number; clean?: number; coins?: number }) => {
+    const entry: HistoryEntry = {
+      id: `local_${Date.now()}_${Math.random()}`,
+      action, label,
+      hunger_delta: deltas.hunger ?? 0,
+      happy_delta: deltas.happy ?? 0,
+      clean_delta: deltas.clean ?? 0,
+      coins_delta: deltas.coins ?? 0,
+      created_at: new Date().toISOString(),
+    };
+    setHistory((h) => [entry, ...h].slice(0, 100));
+    if (userId) {
+      supabase.from("activity_log").insert({
+        user_id: userId, action, label,
+        hunger_delta: entry.hunger_delta,
+        happy_delta: entry.happy_delta,
+        clean_delta: entry.clean_delta,
+        coins_delta: entry.coins_delta,
+      }).then(() => {});
+    }
+  };
 
   const loadLocal = () => {
     try {
@@ -197,6 +275,7 @@ function Index() {
     if (!userId) return;
     if (persistRef.current) clearTimeout(persistRef.current);
     persistRef.current = setTimeout(() => {
+      skipNextRealtimeRef.current = true;
       supabase.from("pet_progress").upsert({
         user_id: userId,
         coins, hunger, happy, clean,
@@ -276,16 +355,18 @@ function Index() {
       if (m.type !== type || m.done) return m;
       const np = m.progress + 1;
       const done = np >= m.target;
+      const updated = { ...m, progress: Math.min(np, m.target), done };
       if (done) {
         setTimeout(() => {
           setCoins((c) => c + m.reward);
           gainXp(m.xp);
           spawnParticles("⭐", 8);
           playSound("yay");
+          setClaimedMissions((cm) => [{ ...updated }, ...cm].slice(0, 50));
           toast.success(`Missão concluída: ${m.label}`, { description: `+${m.reward} 🪙 +${m.xp} XP` });
         }, 50);
       }
-      return { ...m, progress: Math.min(np, m.target), done };
+      return updated;
     }));
   };
 
@@ -314,17 +395,20 @@ function Index() {
     setCoins((c) => c + 2);
     spawnParticles("🦴", 4); playSound("pop"); triggerBounce();
     progressMission("feed"); gainXp(3);
+    logAction("feed", "Alimentou o pet", { hunger: 10, coins: 2 });
   };
   const play = () => {
     setHappy((v) => Math.min(100, v + 10)); pulseStat("happy");
     setCoins((c) => c + 3);
     spawnParticles("❤️", 4); playSound("pop"); triggerBounce();
     progressMission("play"); gainXp(3);
+    logAction("play", "Brincou com o pet", { happy: 10, coins: 3 });
   };
   const wash = () => {
     setClean((v) => Math.min(100, v + 10)); pulseStat("clean");
     spawnParticles("💧", 4); playSound("pop"); triggerBounce();
     progressMission("wash"); gainXp(3);
+    logAction("wash", "Lavou o pet", { clean: 10 });
   };
 
   const buy = (item: Item) => {
@@ -336,6 +420,12 @@ function Index() {
     spawnParticles(item.icon, 6); playSound("buy"); triggerBounce();
     progressMission("buy"); gainXp(5);
     toast.success(`Comprou ${item.name}`, { description: `-${item.price} 🪙` });
+    logAction("buy", `Comprou ${item.name} ${item.icon}`, {
+      hunger: item.effect.hunger ?? 0,
+      happy: item.effect.happy ?? 0,
+      clean: item.effect.clean ?? 0,
+      coins: -item.price,
+    });
   };
 
   // ---------- RANDOM EVENTS ----------
@@ -357,13 +447,15 @@ function Index() {
   const resolveEvent = (idx: number) => {
     if (!event) return;
     const opt = event.options[idx];
-    if (opt.effect.hunger) { setHunger((v) => clamp(v + opt.effect.hunger!)); pulseStat("hunger"); }
-    if (opt.effect.happy) { setHappy((v) => clamp(v + opt.effect.happy!)); pulseStat("happy"); }
-    if (opt.effect.clean) { setClean((v) => clamp(v + opt.effect.clean!)); pulseStat("clean"); }
-    if (opt.effect.coins) { setCoins((c) => Math.max(0, c + opt.effect.coins!)); playSound("coin"); }
+    const deltas = { hunger: 0, happy: 0, clean: 0, coins: 0 };
+    if (opt.effect.hunger) { setHunger((v) => clamp(v + opt.effect.hunger!)); pulseStat("hunger"); deltas.hunger = opt.effect.hunger; }
+    if (opt.effect.happy) { setHappy((v) => clamp(v + opt.effect.happy!)); pulseStat("happy"); deltas.happy = opt.effect.happy; }
+    if (opt.effect.clean) { setClean((v) => clamp(v + opt.effect.clean!)); pulseStat("clean"); deltas.clean = opt.effect.clean; }
+    if (opt.effect.coins) { setCoins((c) => Math.max(0, c + opt.effect.coins!)); playSound("coin"); deltas.coins = opt.effect.coins; }
     if (opt.effect.xp) gainXp(opt.effect.xp);
     spawnParticles(event.emoji, 5);
     toast(opt.toast);
+    logAction("event", `${event.emoji} ${event.title} → ${opt.label}`, deltas);
     setEvent(null);
   };
 
@@ -378,19 +470,43 @@ function Index() {
     toast.success("Save exportado!");
   };
 
+  const validateSave = (s: any): string | null => {
+    if (!s || typeof s !== "object") return "Arquivo não é um save válido.";
+    const isPct = (v: any) => typeof v === "number" && v >= 0 && v <= 100;
+    const isNonNeg = (v: any) => typeof v === "number" && v >= 0 && Number.isFinite(v);
+    if (!isPct(s.hunger)) return "Campo 'hunger' inválido (0-100).";
+    if (!isPct(s.happy)) return "Campo 'happy' inválido (0-100).";
+    if (!isPct(s.clean)) return "Campo 'clean' inválido (0-100).";
+    if (!isNonNeg(s.coins)) return "Campo 'coins' inválido.";
+    if (!isNonNeg(s.xp)) return "Campo 'xp' inválido.";
+    if (!isNonNeg(s.level) || s.level < 1) return "Campo 'level' inválido.";
+    if (s.missions && !Array.isArray(s.missions)) return "Campo 'missions' inválido.";
+    return null;
+  };
+
   const importSave = (file: File) => {
+    if (file.size > 256 * 1024) { toast.error("Arquivo muito grande"); return; }
     const reader = new FileReader();
     reader.onload = () => {
       try {
         const parsed = JSON.parse(reader.result as string);
-        applySave(parsed);
-        toast.success("Save importado!");
-        playSound("yay");
+        const err = validateSave(parsed);
+        if (err) { toast.error("Save inválido", { description: err }); return; }
+        setPendingImport(parsed);
       } catch {
-        toast.error("Arquivo inválido");
+        toast.error("Arquivo JSON inválido");
       }
     };
     reader.readAsText(file);
+  };
+
+  const confirmImport = () => {
+    if (!pendingImport) return;
+    applySave(pendingImport);
+    logAction("import", "Importou save de backup", { coins: (pendingImport.coins ?? 0) - coins });
+    toast.success("Save importado!");
+    playSound("yay");
+    setPendingImport(null);
   };
 
   const signOut = async () => { await supabase.auth.signOut(); toast("Sessão encerrada"); };
@@ -508,9 +624,17 @@ function Index() {
         {tab === "missions" && (
           <section className="space-y-4">
             <div className="rounded-3xl bg-[var(--gradient-reward)] p-6 text-reward-foreground shadow-[var(--shadow-soft)]">
-              <div className="flex items-center gap-2">
-                <Trophy className="h-5 w-5" />
-                <h2 className="text-lg font-bold">Missões diárias</h2>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Trophy className="h-5 w-5" />
+                  <h2 className="text-lg font-bold">Missões diárias</h2>
+                </div>
+                <button
+                  onClick={() => setShowRewards(true)}
+                  className="flex items-center gap-1 rounded-full bg-white/40 px-3 py-1 text-xs font-bold active:scale-95"
+                >
+                  <Gift className="h-3.5 w-3.5" /> Recompensas
+                </button>
               </div>
               <p className="mt-1 text-xs opacity-80">Renovam ao trocar o dia</p>
               <div className="mt-3 flex items-center gap-3 text-sm">
@@ -522,21 +646,61 @@ function Index() {
                   <p className="mt-1 text-xs opacity-80">{xp} / {xpForLevel(level)} XP</p>
                 </div>
               </div>
+              <div className="mt-3 text-xs opacity-90">
+                {missions.filter((m) => m.done).length} / {missions.length} concluídas hoje
+              </div>
             </div>
             <div className="space-y-2">
-              {missions.map((m) => (
-                <div key={m.id} className={`rounded-2xl border border-border bg-card p-4 ${m.done ? "opacity-60" : ""}`}>
-                  <div className="flex items-center justify-between">
-                    <p className="font-semibold">{m.label}</p>
-                    <span className="text-xs font-bold text-money">+{m.reward} 🪙 · +{m.xp} XP</span>
+              {missions.map((m) => {
+                const pct = (m.progress / m.target) * 100;
+                return (
+                  <div
+                    key={m.id}
+                    className={`relative overflow-hidden rounded-2xl border p-4 transition-all ${m.done ? "border-money/40 bg-money/5" : "border-border bg-card"}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className={`font-semibold ${m.done ? "text-money" : ""}`}>
+                        {m.done && "✅ "}{m.label}
+                      </p>
+                      <span className="text-xs font-bold text-money">+{m.reward} 🪙 · +{m.xp} XP</span>
+                    </div>
+                    <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-muted">
+                      <div
+                        className={`h-full transition-all duration-500 ${m.done ? "bg-money" : "bg-primary"}`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <div className="mt-1 flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground tabular-nums">{m.progress} / {m.target}</span>
+                      {m.done && <span className="font-semibold text-money">Recompensa recebida 🎁</span>}
+                    </div>
                   </div>
-                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
-                    <div className="h-full bg-primary transition-all duration-500" style={{ width: `${(m.progress / m.target) * 100}%` }} />
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">{m.progress} / {m.target} {m.done && "✅"}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
+          </section>
+        )}
+
+        {tab === "history" && (
+          <section className="space-y-4">
+            <div className="rounded-3xl bg-[var(--gradient-hero)] p-6 text-primary-foreground shadow-[var(--shadow-soft)]">
+              <div className="flex items-center gap-2">
+                <HistoryIcon className="h-5 w-5" />
+                <h2 className="text-lg font-bold">Histórico</h2>
+              </div>
+              <p className="mt-1 text-sm opacity-90">Tudo o que você fez com {petName}</p>
+            </div>
+            {history.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+                Nenhuma atividade ainda. Comece a cuidar do seu pet!
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {history.map((h) => (
+                  <HistoryRow key={h.id} entry={h} />
+                ))}
+              </div>
+            )}
           </section>
         )}
 
@@ -604,15 +768,104 @@ function Index() {
         </div>
       )}
 
+      {/* Import confirmation modal */}
+      {pendingImport && (
+        <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-sm rounded-3xl bg-card p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="mb-3 flex items-start gap-3">
+              <AlertTriangle className="h-6 w-6 shrink-0 text-reward" />
+              <div>
+                <h3 className="font-bold">Confirmar importação</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Isso vai sobrescrever seu progresso atual. Não tem como desfazer.
+                </p>
+              </div>
+            </div>
+            <div className="rounded-xl bg-muted/50 p-3 text-xs space-y-1">
+              <div className="flex justify-between"><span className="text-muted-foreground">Moedas</span><span className="font-semibold">{coins} → {pendingImport.coins}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Nível</span><span className="font-semibold">{level} → {pendingImport.level}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Fome</span><span className="font-semibold">{hunger} → {pendingImport.hunger}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Felicidade</span><span className="font-semibold">{happy} → {pendingImport.happy}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Limpeza</span><span className="font-semibold">{clean} → {pendingImport.clean}</span></div>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button onClick={() => setPendingImport(null)} className="rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-semibold active:scale-95">
+                Cancelar
+              </button>
+              <button onClick={confirmImport} className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground active:scale-95">
+                Sobrescrever
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rewards review modal */}
+      {showRewards && (
+        <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/50 px-4" onClick={() => setShowRewards(false)}>
+          <div className="w-full max-w-sm rounded-3xl bg-card p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-3 flex items-center gap-2">
+              <Gift className="h-5 w-5 text-reward" />
+              <h3 className="font-bold">Recompensas ganhas</h3>
+            </div>
+            {claimedMissions.length === 0 ? (
+              <p className="py-4 text-center text-sm text-muted-foreground">Nenhuma missão concluída ainda. Continue cuidando do seu pet!</p>
+            ) : (
+              <div className="max-h-80 space-y-2 overflow-y-auto">
+                {claimedMissions.map((m, i) => (
+                  <div key={`${m.id}_${i}`} className="flex items-center justify-between rounded-xl border border-money/30 bg-money/5 p-3 text-sm">
+                    <span className="font-semibold">✅ {m.label}</span>
+                    <span className="text-xs font-bold text-money">+{m.reward} 🪙 · +{m.xp} XP</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button onClick={() => setShowRewards(false)} className="mt-4 w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground active:scale-95">
+              Fechar
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Bottom nav */}
       <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-border bg-card/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-md items-center justify-around px-2 py-2">
+        <div className="mx-auto flex max-w-md items-center justify-around px-1 py-2">
           <NavBtn active={tab === "pet"} onClick={() => setTab("pet")} icon={<Heart />} label="Pet" />
           <NavBtn active={tab === "shop"} onClick={() => setTab("shop")} icon={<ShoppingBag />} label="Loja" />
           <NavBtn active={tab === "missions"} onClick={() => setTab("missions")} icon={<Trophy />} label="Missões" />
+          <NavBtn active={tab === "history"} onClick={() => setTab("history")} icon={<HistoryIcon />} label="Histórico" />
           <NavBtn active={tab === "life"} onClick={() => setTab("life")} icon={<Gamepad2 />} label="Vida" />
         </div>
       </nav>
+    </div>
+  );
+}
+
+function HistoryRow({ entry }: { entry: HistoryEntry }) {
+  const d = new Date(entry.created_at);
+  const date = d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+  const time = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  const deltas: { label: string; value: number; cls: string }[] = [
+    { label: "🦴", value: entry.hunger_delta, cls: "text-reward" },
+    { label: "❤️", value: entry.happy_delta, cls: "text-pet" },
+    { label: "💧", value: entry.clean_delta, cls: "text-primary" },
+    { label: "🪙", value: entry.coins_delta, cls: "text-money" },
+  ].filter((x) => x.value !== 0);
+  return (
+    <div className="rounded-2xl border border-border bg-card p-3">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold">{entry.label}</p>
+        <span className="text-[11px] text-muted-foreground tabular-nums">{date} · {time}</span>
+      </div>
+      {deltas.length > 0 && (
+        <div className="mt-1.5 flex flex-wrap gap-1.5 text-xs">
+          {deltas.map((x, i) => (
+            <span key={i} className={`rounded-full bg-muted px-2 py-0.5 font-semibold ${x.cls}`}>
+              {x.label} {x.value > 0 ? `+${x.value}` : x.value}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
