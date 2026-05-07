@@ -166,6 +166,69 @@ function Index() {
     return () => sub.subscription.unsubscribe();
   }, []);
 
+  // ---------- REALTIME SYNC ----------
+  const skipNextRealtimeRef = useRef(false);
+  useEffect(() => {
+    if (!userId) return;
+    loadHistory(userId);
+    const channel = supabase
+      .channel(`pet_progress_${userId}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "pet_progress", filter: `user_id=eq.${userId}` },
+        (payload) => {
+          if (skipNextRealtimeRef.current) { skipNextRealtimeRef.current = false; return; }
+          const d: any = payload.new;
+          applySave({
+            coins: d.coins, hunger: d.hunger, happy: d.happy, clean: d.clean,
+            xp: d.xp, level: d.level,
+            missions: Array.isArray(d.missions) ? d.missions : undefined,
+            missionsDate: d.missions_date,
+          });
+          toast("☁️ Save sincronizado de outro dispositivo");
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "activity_log", filter: `user_id=eq.${userId}` },
+        (payload) => setHistory((h) => [payload.new as HistoryEntry, ...h].slice(0, 100))
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [userId]);
+
+  const loadHistory = async (uid: string) => {
+    const { data } = await supabase
+      .from("activity_log")
+      .select("*")
+      .eq("user_id", uid)
+      .order("created_at", { ascending: false })
+      .limit(100);
+    if (data) setHistory(data as HistoryEntry[]);
+  };
+
+  const logAction = (action: string, label: string, deltas: { hunger?: number; happy?: number; clean?: number; coins?: number }) => {
+    const entry: HistoryEntry = {
+      id: `local_${Date.now()}_${Math.random()}`,
+      action, label,
+      hunger_delta: deltas.hunger ?? 0,
+      happy_delta: deltas.happy ?? 0,
+      clean_delta: deltas.clean ?? 0,
+      coins_delta: deltas.coins ?? 0,
+      created_at: new Date().toISOString(),
+    };
+    setHistory((h) => [entry, ...h].slice(0, 100));
+    if (userId) {
+      supabase.from("activity_log").insert({
+        user_id: userId, action, label,
+        hunger_delta: entry.hunger_delta,
+        happy_delta: entry.happy_delta,
+        clean_delta: entry.clean_delta,
+        coins_delta: entry.coins_delta,
+      }).then(() => {});
+    }
+  };
+
   const loadLocal = () => {
     try {
       const raw = localStorage.getItem("petlife_save");
