@@ -562,30 +562,38 @@ function Index() {
       <main className="mx-auto max-w-md px-5 pb-28 pt-4">
         {tab === "pet" && (
           <section className="space-y-6">
-            <div className="relative rounded-3xl bg-[var(--gradient-pet)] p-8 text-center shadow-[var(--shadow-pet)] overflow-hidden">
-              <p className="text-sm font-medium text-pet-foreground/80">Seu pet</p>
-              <h2 className="text-2xl font-bold text-pet-foreground">{petName}</h2>
-              <div className={`relative mx-auto my-4 flex h-44 w-44 items-center justify-center rounded-full bg-white/40 shadow-inner transition-transform duration-300 ${bounce ? "scale-110 -translate-y-2" : "scale-100"}`}>
-                <img src={petImg} alt={petName} width={176} height={176} className="h-40 w-40 object-contain drop-shadow-md" />
-                {/* particles */}
-                <div className="pointer-events-none absolute inset-0">
-                  {particles.map((p, i) => (
-                    <span
-                      key={p.id}
-                      className="absolute left-1/2 top-1/2 text-2xl"
-                      style={{
-                        animation: "particle 1.1s ease-out forwards",
-                        transform: `translate(-50%, -50%) rotate(${(i * 53) % 360}deg)`,
-                      }}
-                    >
-                      {p.emoji}
-                    </span>
-                  ))}
+            <div className="relative overflow-hidden rounded-[2rem] bg-[var(--gradient-pet)] p-6 text-center shadow-[var(--shadow-pet)] ring-1 ring-white/50">
+              {/* Sunburst aura */}
+              <div aria-hidden className="pointer-events-none absolute inset-0 grid place-items-center">
+                <div className="h-[120%] w-[120%] animate-spin-slow opacity-60"
+                     style={{ background: "conic-gradient(from 0deg, transparent 0 30deg, rgba(255,255,255,.45) 35deg 45deg, transparent 50deg 90deg, rgba(255,255,255,.35) 95deg 105deg, transparent 110deg 150deg, rgba(255,255,255,.4) 155deg 165deg, transparent 170deg 210deg, rgba(255,255,255,.35) 215deg 225deg, transparent 230deg 270deg, rgba(255,255,255,.4) 275deg 285deg, transparent 290deg 330deg, rgba(255,255,255,.35) 335deg 345deg, transparent 350deg 360deg)" }} />
+              </div>
+              <div className="relative">
+                <p className="text-xs font-bold uppercase tracking-widest text-pet-foreground/80">Seu pet</p>
+                <h2 className="text-3xl font-extrabold text-pet-foreground drop-shadow-sm">{petName}</h2>
+                <div className={`relative mx-auto my-4 grid h-48 w-48 place-items-center rounded-full bg-white/60 ring-4 ring-white/80 shadow-[var(--shadow-glow)] transition-transform duration-300 ${bounce ? "scale-110 -translate-y-2" : "scale-100"}`}>
+                  <div aria-hidden className="absolute inset-0 rounded-full animate-pulse-ring" />
+                  <img src={petImg} alt={petName} width={176} height={176} className="h-44 w-44 object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.25)]" />
+                  {/* particles */}
+                  <div className="pointer-events-none absolute inset-0">
+                    {particles.map((p, i) => (
+                      <span
+                        key={p.id}
+                        className="absolute left-1/2 top-1/2 text-2xl drop-shadow"
+                        style={{
+                          animation: "particle 1.1s ease-out forwards",
+                          transform: `translate(-50%, -50%) rotate(${(i * 53) % 360}deg)`,
+                        }}
+                      >
+                        {p.emoji}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-white/70 px-3 py-1 text-sm font-bold text-foreground shadow-sm">
+                  {mood > 70 ? "💖 Tô feliz!" : mood > 40 ? "🙂 Tô de boa..." : "🥺 Preciso de cuidado"}
                 </div>
               </div>
-              <p className="text-sm text-pet-foreground/90">
-                {mood > 70 ? "Tô feliz! 💖" : mood > 40 ? "Tô de boa..." : "Preciso de cuidado 🥺"}
-              </p>
             </div>
 
             <div className="space-y-3">
@@ -595,9 +603,9 @@ function Index() {
             </div>
 
             <div className="grid grid-cols-3 gap-3">
-              <ActionBtn label="Alimentar" icon="🦴" onClick={feed} />
-              <ActionBtn label="Brincar" icon="🎾" onClick={play} />
-              <ActionBtn label="Banho" icon="🛁" onClick={wash} />
+              <ActionBtn label="Alimentar" icon="🦴" onClick={feed} variant="reward" />
+              <ActionBtn label="Brincar" icon="🎾" onClick={play} variant="pet" />
+              <ActionBtn label="Banho" icon="🛁" onClick={wash} variant="primary" />
             </div>
           </section>
         )}
