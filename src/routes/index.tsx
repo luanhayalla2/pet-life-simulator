@@ -515,19 +515,28 @@ function Index() {
   const xpPct = Math.round((xp / xpForLevel(level)) * 100);
 
   return (
-    <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
+    <div className="min-h-screen bg-app text-foreground relative overflow-hidden">
+      {/* Floating decorative shapes */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <span className="absolute -top-10 -left-8 h-40 w-40 rounded-full bg-[var(--gradient-pet)] opacity-30 blur-2xl animate-float" />
+        <span className="absolute top-1/3 -right-10 h-48 w-48 rounded-full bg-[var(--gradient-hero)] opacity-25 blur-2xl animate-float" style={{ animationDelay: "1.2s" }} />
+        <span className="absolute bottom-10 left-1/4 h-36 w-36 rounded-full bg-[var(--gradient-reward)] opacity-25 blur-2xl animate-float" style={{ animationDelay: "2s" }} />
+      </div>
+
       {/* Header */}
-      <header className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-md items-center justify-between px-5 py-3">
-          <h1 className="flex items-center gap-2 text-lg font-bold">
-            <Sparkles className="h-5 w-5 text-accent" />
-            PetLife
+      <header className="sticky top-0 z-10 border-b border-white/40 bg-background/70 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-md items-center justify-between px-4 py-3">
+          <h1 className="flex items-center gap-2 text-lg font-extrabold tracking-tight">
+            <span className="grid h-8 w-8 place-items-center rounded-xl bg-[var(--gradient-hero)] shadow-[var(--shadow-soft)]">
+              <Sparkles className="h-4 w-4 text-white" />
+            </span>
+            <span className="bg-[var(--gradient-hero)] bg-clip-text text-transparent">PetLife</span>
           </h1>
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 rounded-full bg-reward/15 px-2.5 py-1 text-xs font-bold text-reward-foreground">
-              <Zap className="h-3.5 w-3.5" /> Nv {level}
+            <div className="flex items-center gap-1.5 rounded-full bg-[var(--gradient-reward)] px-3 py-1.5 text-xs font-extrabold text-reward-foreground shadow-[var(--shadow-reward)]">
+              <Zap className="h-3.5 w-3.5 fill-current" /> Nv {level}
             </div>
-            <div className="flex items-center gap-1.5 rounded-full bg-money/10 px-2.5 py-1 text-money text-sm font-semibold">
+            <div className="flex items-center gap-1.5 rounded-full bg-[var(--gradient-money)] px-3 py-1.5 text-money-foreground text-sm font-extrabold shadow-[var(--shadow-money)]">
               <Coins className="h-4 w-4" />
               <span className="tabular-nums">{coins}</span>
             </div>
@@ -542,9 +551,10 @@ function Index() {
             )}
           </div>
         </div>
-        <div className="mx-auto max-w-md px-5 pb-2">
-          <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-            <div className="h-full bg-gradient-to-r from-reward to-accent transition-all duration-500" style={{ width: `${xpPct}%` }} />
+        <div className="mx-auto max-w-md px-4 pb-2.5">
+          <div className="relative h-2 overflow-hidden rounded-full bg-muted/80 ring-1 ring-white/60">
+            <div className="h-full bg-[var(--gradient-reward)] transition-all duration-500" style={{ width: `${xpPct}%` }} />
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent" style={{ backgroundSize: "200% 100%", animation: "shimmer 2.5s linear infinite" }} />
           </div>
         </div>
       </header>
@@ -552,30 +562,38 @@ function Index() {
       <main className="mx-auto max-w-md px-5 pb-28 pt-4">
         {tab === "pet" && (
           <section className="space-y-6">
-            <div className="relative rounded-3xl bg-[var(--gradient-pet)] p-8 text-center shadow-[var(--shadow-pet)] overflow-hidden">
-              <p className="text-sm font-medium text-pet-foreground/80">Seu pet</p>
-              <h2 className="text-2xl font-bold text-pet-foreground">{petName}</h2>
-              <div className={`relative mx-auto my-4 flex h-44 w-44 items-center justify-center rounded-full bg-white/40 shadow-inner transition-transform duration-300 ${bounce ? "scale-110 -translate-y-2" : "scale-100"}`}>
-                <img src={petImg} alt={petName} width={176} height={176} className="h-40 w-40 object-contain drop-shadow-md" />
-                {/* particles */}
-                <div className="pointer-events-none absolute inset-0">
-                  {particles.map((p, i) => (
-                    <span
-                      key={p.id}
-                      className="absolute left-1/2 top-1/2 text-2xl"
-                      style={{
-                        animation: "particle 1.1s ease-out forwards",
-                        transform: `translate(-50%, -50%) rotate(${(i * 53) % 360}deg)`,
-                      }}
-                    >
-                      {p.emoji}
-                    </span>
-                  ))}
+            <div className="relative overflow-hidden rounded-[2rem] bg-[var(--gradient-pet)] p-6 text-center shadow-[var(--shadow-pet)] ring-1 ring-white/50">
+              {/* Sunburst aura */}
+              <div aria-hidden className="pointer-events-none absolute inset-0 grid place-items-center">
+                <div className="h-[120%] w-[120%] animate-spin-slow opacity-60"
+                     style={{ background: "conic-gradient(from 0deg, transparent 0 30deg, rgba(255,255,255,.45) 35deg 45deg, transparent 50deg 90deg, rgba(255,255,255,.35) 95deg 105deg, transparent 110deg 150deg, rgba(255,255,255,.4) 155deg 165deg, transparent 170deg 210deg, rgba(255,255,255,.35) 215deg 225deg, transparent 230deg 270deg, rgba(255,255,255,.4) 275deg 285deg, transparent 290deg 330deg, rgba(255,255,255,.35) 335deg 345deg, transparent 350deg 360deg)" }} />
+              </div>
+              <div className="relative">
+                <p className="text-xs font-bold uppercase tracking-widest text-pet-foreground/80">Seu pet</p>
+                <h2 className="text-3xl font-extrabold text-pet-foreground drop-shadow-sm">{petName}</h2>
+                <div className={`relative mx-auto my-4 grid h-48 w-48 place-items-center rounded-full bg-white/60 ring-4 ring-white/80 shadow-[var(--shadow-glow)] transition-transform duration-300 ${bounce ? "scale-110 -translate-y-2" : "scale-100"}`}>
+                  <div aria-hidden className="absolute inset-0 rounded-full animate-pulse-ring" />
+                  <img src={petImg} alt={petName} width={176} height={176} className="h-44 w-44 object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.25)]" />
+                  {/* particles */}
+                  <div className="pointer-events-none absolute inset-0">
+                    {particles.map((p, i) => (
+                      <span
+                        key={p.id}
+                        className="absolute left-1/2 top-1/2 text-2xl drop-shadow"
+                        style={{
+                          animation: "particle 1.1s ease-out forwards",
+                          transform: `translate(-50%, -50%) rotate(${(i * 53) % 360}deg)`,
+                        }}
+                      >
+                        {p.emoji}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-white/70 px-3 py-1 text-sm font-bold text-foreground shadow-sm">
+                  {mood > 70 ? "💖 Tô feliz!" : mood > 40 ? "🙂 Tô de boa..." : "🥺 Preciso de cuidado"}
                 </div>
               </div>
-              <p className="text-sm text-pet-foreground/90">
-                {mood > 70 ? "Tô feliz! 💖" : mood > 40 ? "Tô de boa..." : "Preciso de cuidado 🥺"}
-              </p>
             </div>
 
             <div className="space-y-3">
@@ -585,9 +603,9 @@ function Index() {
             </div>
 
             <div className="grid grid-cols-3 gap-3">
-              <ActionBtn label="Alimentar" icon="🦴" onClick={feed} />
-              <ActionBtn label="Brincar" icon="🎾" onClick={play} />
-              <ActionBtn label="Banho" icon="🛁" onClick={wash} />
+              <ActionBtn label="Alimentar" icon="🦴" onClick={feed} variant="reward" />
+              <ActionBtn label="Brincar" icon="🎾" onClick={play} variant="pet" />
+              <ActionBtn label="Banho" icon="🛁" onClick={wash} variant="primary" />
             </div>
           </section>
         )}
@@ -607,11 +625,12 @@ function Index() {
                     key={item.id}
                     onClick={() => buy(item)}
                     disabled={!can}
-                    className="rounded-2xl border border-border bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-soft)] active:scale-95 disabled:opacity-40 disabled:hover:translate-y-0"
+                    className="group relative overflow-hidden rounded-2xl border border-white/60 bg-card/90 p-4 text-left ring-1 ring-black/5 backdrop-blur transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-pop)] active:scale-95 disabled:opacity-40 disabled:hover:translate-y-0"
                   >
-                    <div className="text-3xl">{item.icon}</div>
-                    <div className="mt-2 font-semibold">{item.name}</div>
-                    <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-money/10 px-2 py-0.5 text-xs font-semibold text-money">
+                    <span className="pointer-events-none absolute -right-6 -top-6 h-16 w-16 rounded-full bg-[var(--gradient-reward)] opacity-30 blur-xl transition-opacity group-hover:opacity-60" />
+                    <div className="relative text-4xl drop-shadow transition-transform group-hover:scale-110">{item.icon}</div>
+                    <div className="relative mt-2 font-bold">{item.name}</div>
+                    <div className="relative mt-2 inline-flex items-center gap-1 rounded-full bg-[var(--gradient-money)] px-2.5 py-0.5 text-xs font-extrabold text-money-foreground shadow-[var(--shadow-money)]">
                       <Coins className="h-3 w-3" />{item.price}
                     </div>
                   </button>
@@ -887,14 +906,20 @@ function Stat({ icon, label, value, color, pulse }: { icon: React.ReactNode; lab
   );
 }
 
-function ActionBtn({ label, icon, onClick }: { label: string; icon: string; onClick: () => void }) {
+function ActionBtn({ label, icon, onClick, variant = "primary" }: { label: string; icon: string; onClick: () => void; variant?: "primary" | "pet" | "reward" }) {
+  const styles: Record<string, string> = {
+    primary: "bg-[var(--gradient-hero)] text-primary-foreground shadow-[var(--shadow-pop)]",
+    pet: "bg-[var(--gradient-pet)] text-pet-foreground shadow-[var(--shadow-pet)]",
+    reward: "bg-[var(--gradient-reward)] text-reward-foreground shadow-[var(--shadow-reward)]",
+  };
   return (
     <button
       onClick={onClick}
-      className="flex flex-col items-center gap-1 rounded-2xl bg-primary p-3 text-primary-foreground shadow-[var(--shadow-soft)] transition-transform hover:-translate-y-0.5 active:scale-90"
+      className={`group relative flex flex-col items-center gap-1 overflow-hidden rounded-2xl ${styles[variant]} p-4 ring-1 ring-white/50 transition-transform hover:-translate-y-1 active:translate-y-0.5 active:scale-95`}
     >
-      <span className="text-2xl">{icon}</span>
-      <span className="text-xs font-semibold">{label}</span>
+      <span className="absolute inset-x-0 top-0 h-1/2 rounded-t-2xl bg-white/25" />
+      <span className="relative text-3xl drop-shadow transition-transform group-hover:scale-110 group-active:scale-90">{icon}</span>
+      <span className="relative text-xs font-extrabold uppercase tracking-wide">{label}</span>
     </button>
   );
 }
@@ -912,10 +937,13 @@ function NavBtn({ active, onClick, icon, label }: { active: boolean; onClick: ()
   return (
     <button
       onClick={onClick}
-      className={`flex flex-1 flex-col items-center gap-0.5 rounded-xl py-2 text-xs font-semibold transition-colors ${active ? "text-primary" : "text-muted-foreground"}`}
+      className={`relative flex flex-1 flex-col items-center gap-0.5 rounded-2xl py-2 text-[11px] font-extrabold uppercase tracking-wide transition-all ${active ? "text-primary-foreground" : "text-muted-foreground"}`}
     >
-      <span className={`grid h-6 w-6 place-items-center [&_svg]:h-5 [&_svg]:w-5 ${active ? "scale-110" : ""}`}>{icon}</span>
-      {label}
+      {active && (
+        <span className="absolute inset-x-1 inset-y-1 -z-0 rounded-2xl bg-[var(--gradient-hero)] shadow-[var(--shadow-soft)] animate-pop-in" />
+      )}
+      <span className={`relative z-10 grid h-7 w-7 place-items-center [&_svg]:h-5 [&_svg]:w-5 transition-transform ${active ? "scale-110" : ""}`}>{icon}</span>
+      <span className="relative z-10">{label}</span>
     </button>
   );
 }
