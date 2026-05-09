@@ -625,11 +625,12 @@ function Index() {
                     key={item.id}
                     onClick={() => buy(item)}
                     disabled={!can}
-                    className="rounded-2xl border border-border bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-soft)] active:scale-95 disabled:opacity-40 disabled:hover:translate-y-0"
+                    className="group relative overflow-hidden rounded-2xl border border-white/60 bg-card/90 p-4 text-left ring-1 ring-black/5 backdrop-blur transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-pop)] active:scale-95 disabled:opacity-40 disabled:hover:translate-y-0"
                   >
-                    <div className="text-3xl">{item.icon}</div>
-                    <div className="mt-2 font-semibold">{item.name}</div>
-                    <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-money/10 px-2 py-0.5 text-xs font-semibold text-money">
+                    <span className="pointer-events-none absolute -right-6 -top-6 h-16 w-16 rounded-full bg-[var(--gradient-reward)] opacity-30 blur-xl transition-opacity group-hover:opacity-60" />
+                    <div className="relative text-4xl drop-shadow transition-transform group-hover:scale-110">{item.icon}</div>
+                    <div className="relative mt-2 font-bold">{item.name}</div>
+                    <div className="relative mt-2 inline-flex items-center gap-1 rounded-full bg-[var(--gradient-money)] px-2.5 py-0.5 text-xs font-extrabold text-money-foreground shadow-[var(--shadow-money)]">
                       <Coins className="h-3 w-3" />{item.price}
                     </div>
                   </button>
