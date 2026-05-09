@@ -905,14 +905,20 @@ function Stat({ icon, label, value, color, pulse }: { icon: React.ReactNode; lab
   );
 }
 
-function ActionBtn({ label, icon, onClick }: { label: string; icon: string; onClick: () => void }) {
+function ActionBtn({ label, icon, onClick, variant = "primary" }: { label: string; icon: string; onClick: () => void; variant?: "primary" | "pet" | "reward" }) {
+  const styles: Record<string, string> = {
+    primary: "bg-[var(--gradient-hero)] text-primary-foreground shadow-[var(--shadow-pop)]",
+    pet: "bg-[var(--gradient-pet)] text-pet-foreground shadow-[var(--shadow-pet)]",
+    reward: "bg-[var(--gradient-reward)] text-reward-foreground shadow-[var(--shadow-reward)]",
+  };
   return (
     <button
       onClick={onClick}
-      className="flex flex-col items-center gap-1 rounded-2xl bg-primary p-3 text-primary-foreground shadow-[var(--shadow-soft)] transition-transform hover:-translate-y-0.5 active:scale-90"
+      className={`group relative flex flex-col items-center gap-1 overflow-hidden rounded-2xl ${styles[variant]} p-4 ring-1 ring-white/50 transition-transform hover:-translate-y-1 active:translate-y-0.5 active:scale-95`}
     >
-      <span className="text-2xl">{icon}</span>
-      <span className="text-xs font-semibold">{label}</span>
+      <span className="absolute inset-x-0 top-0 h-1/2 rounded-t-2xl bg-white/25" />
+      <span className="relative text-3xl drop-shadow transition-transform group-hover:scale-110 group-active:scale-90">{icon}</span>
+      <span className="relative text-xs font-extrabold uppercase tracking-wide">{label}</span>
     </button>
   );
 }
