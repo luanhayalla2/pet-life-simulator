@@ -937,10 +937,13 @@ function NavBtn({ active, onClick, icon, label }: { active: boolean; onClick: ()
   return (
     <button
       onClick={onClick}
-      className={`flex flex-1 flex-col items-center gap-0.5 rounded-xl py-2 text-xs font-semibold transition-colors ${active ? "text-primary" : "text-muted-foreground"}`}
+      className={`relative flex flex-1 flex-col items-center gap-0.5 rounded-2xl py-2 text-[11px] font-extrabold uppercase tracking-wide transition-all ${active ? "text-primary-foreground" : "text-muted-foreground"}`}
     >
-      <span className={`grid h-6 w-6 place-items-center [&_svg]:h-5 [&_svg]:w-5 ${active ? "scale-110" : ""}`}>{icon}</span>
-      {label}
+      {active && (
+        <span className="absolute inset-x-1 inset-y-1 -z-0 rounded-2xl bg-[var(--gradient-hero)] shadow-[var(--shadow-soft)] animate-pop-in" />
+      )}
+      <span className={`relative z-10 grid h-7 w-7 place-items-center [&_svg]:h-5 [&_svg]:w-5 transition-transform ${active ? "scale-110" : ""}`}>{icon}</span>
+      <span className="relative z-10">{label}</span>
     </button>
   );
 }
