@@ -515,19 +515,28 @@ function Index() {
   const xpPct = Math.round((xp / xpForLevel(level)) * 100);
 
   return (
-    <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
+    <div className="min-h-screen bg-app text-foreground relative overflow-hidden">
+      {/* Floating decorative shapes */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <span className="absolute -top-10 -left-8 h-40 w-40 rounded-full bg-[var(--gradient-pet)] opacity-30 blur-2xl animate-float" />
+        <span className="absolute top-1/3 -right-10 h-48 w-48 rounded-full bg-[var(--gradient-hero)] opacity-25 blur-2xl animate-float" style={{ animationDelay: "1.2s" }} />
+        <span className="absolute bottom-10 left-1/4 h-36 w-36 rounded-full bg-[var(--gradient-reward)] opacity-25 blur-2xl animate-float" style={{ animationDelay: "2s" }} />
+      </div>
+
       {/* Header */}
-      <header className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-md items-center justify-between px-5 py-3">
-          <h1 className="flex items-center gap-2 text-lg font-bold">
-            <Sparkles className="h-5 w-5 text-accent" />
-            PetLife
+      <header className="sticky top-0 z-10 border-b border-white/40 bg-background/70 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-md items-center justify-between px-4 py-3">
+          <h1 className="flex items-center gap-2 text-lg font-extrabold tracking-tight">
+            <span className="grid h-8 w-8 place-items-center rounded-xl bg-[var(--gradient-hero)] shadow-[var(--shadow-soft)]">
+              <Sparkles className="h-4 w-4 text-white" />
+            </span>
+            <span className="bg-[var(--gradient-hero)] bg-clip-text text-transparent">PetLife</span>
           </h1>
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 rounded-full bg-reward/15 px-2.5 py-1 text-xs font-bold text-reward-foreground">
-              <Zap className="h-3.5 w-3.5" /> Nv {level}
+            <div className="flex items-center gap-1.5 rounded-full bg-[var(--gradient-reward)] px-3 py-1.5 text-xs font-extrabold text-reward-foreground shadow-[var(--shadow-reward)]">
+              <Zap className="h-3.5 w-3.5 fill-current" /> Nv {level}
             </div>
-            <div className="flex items-center gap-1.5 rounded-full bg-money/10 px-2.5 py-1 text-money text-sm font-semibold">
+            <div className="flex items-center gap-1.5 rounded-full bg-[var(--gradient-money)] px-3 py-1.5 text-money-foreground text-sm font-extrabold shadow-[var(--shadow-money)]">
               <Coins className="h-4 w-4" />
               <span className="tabular-nums">{coins}</span>
             </div>
@@ -542,9 +551,10 @@ function Index() {
             )}
           </div>
         </div>
-        <div className="mx-auto max-w-md px-5 pb-2">
-          <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-            <div className="h-full bg-gradient-to-r from-reward to-accent transition-all duration-500" style={{ width: `${xpPct}%` }} />
+        <div className="mx-auto max-w-md px-4 pb-2.5">
+          <div className="relative h-2 overflow-hidden rounded-full bg-muted/80 ring-1 ring-white/60">
+            <div className="h-full bg-[var(--gradient-reward)] transition-all duration-500" style={{ width: `${xpPct}%` }} />
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent" style={{ backgroundSize: "200% 100%", animation: "shimmer 2.5s linear infinite" }} />
           </div>
         </div>
       </header>
