@@ -602,10 +602,31 @@ function Index() {
               <Stat icon={<Droplet className="h-4 w-4" />} label="Limpeza" value={clean} color="primary" pulse={statPulse === "clean"} />
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
-              <ActionBtn label="Alimentar" icon="🦴" onClick={feed} variant="reward" />
-              <ActionBtn label="Brincar" icon="🎾" onClick={play} variant="pet" />
-              <ActionBtn label="Banho" icon="🛁" onClick={wash} variant="primary" />
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+              <ActionBtn
+                label="Alimentar"
+                icon="🦴"
+                onClick={feed}
+                variant="reward"
+                loading={loadingAction === "feed"}
+                disabled={!!loadingAction || hunger >= 100}
+              />
+              <ActionBtn
+                label="Brincar"
+                icon="🎾"
+                onClick={play}
+                variant="pet"
+                loading={loadingAction === "play"}
+                disabled={!!loadingAction || happy >= 100 || hunger <= 0}
+              />
+              <ActionBtn
+                label="Banho"
+                icon="🛁"
+                onClick={wash}
+                variant="primary"
+                loading={loadingAction === "wash"}
+                disabled={!!loadingAction || clean >= 100}
+              />
             </div>
           </section>
         )}
