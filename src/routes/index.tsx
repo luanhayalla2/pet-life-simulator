@@ -147,6 +147,7 @@ function Index() {
   const [pendingImport, setPendingImport] = useState<any | null>(null);
   const [claimedMissions, setClaimedMissions] = useState<Mission[]>([]);
   const [showRewards, setShowRewards] = useState(false);
+  const [loadingAction, setLoadingAction] = useState<null | "feed" | "play" | "wash">(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const lastEventRef = useRef<number>(Date.now());
@@ -390,26 +391,33 @@ function Index() {
   };
 
   // ---------- ACTIONS ----------
-  const feed = () => {
+  const withLoading = (key: "feed" | "play" | "wash", fn: () => void, ms = 450) => {
+    if (loadingAction) return;
+    setLoadingAction(key);
+    try { fn(); } finally {
+      setTimeout(() => setLoadingAction((cur) => (cur === key ? null : cur)), ms);
+    }
+  };
+  const feed = () => withLoading("feed", () => {
     setHunger((v) => Math.min(100, v + 10)); pulseStat("hunger");
     setCoins((c) => c + 2);
     spawnParticles("🦴", 4); playSound("pop"); triggerBounce();
     progressMission("feed"); gainXp(3);
     logAction("feed", "Alimentou o pet", { hunger: 10, coins: 2 });
-  };
-  const play = () => {
+  });
+  const play = () => withLoading("play", () => {
     setHappy((v) => Math.min(100, v + 10)); pulseStat("happy");
     setCoins((c) => c + 3);
     spawnParticles("❤️", 4); playSound("pop"); triggerBounce();
     progressMission("play"); gainXp(3);
     logAction("play", "Brincou com o pet", { happy: 10, coins: 3 });
-  };
-  const wash = () => {
+  });
+  const wash = () => withLoading("wash", () => {
     setClean((v) => Math.min(100, v + 10)); pulseStat("clean");
     spawnParticles("💧", 4); playSound("pop"); triggerBounce();
     progressMission("wash"); gainXp(3);
     logAction("wash", "Lavou o pet", { clean: 10 });
-  };
+  });
 
   const buy = (item: Item) => {
     if (coins < item.price) { playSound("alert"); toast.error("Moedas insuficientes"); return; }
@@ -602,10 +610,31 @@ function Index() {
               <Stat icon={<Droplet className="h-4 w-4" />} label="Limpeza" value={clean} color="primary" pulse={statPulse === "clean"} />
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
-              <ActionBtn label="Alimentar" icon="🦴" onClick={feed} variant="reward" />
-              <ActionBtn label="Brincar" icon="🎾" onClick={play} variant="pet" />
-              <ActionBtn label="Banho" icon="🛁" onClick={wash} variant="primary" />
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+              <ActionBtn
+                label="Alimentar"
+                icon="🦴"
+                onClick={feed}
+                variant="reward"
+                loading={loadingAction === "feed"}
+                disabled={!!loadingAction || hunger >= 100}
+              />
+              <ActionBtn
+                label="Brincar"
+                icon="🎾"
+                onClick={play}
+                variant="pet"
+                loading={loadingAction === "play"}
+                disabled={!!loadingAction || happy >= 100 || hunger <= 0}
+              />
+              <ActionBtn
+                label="Banho"
+                icon="🛁"
+                onClick={wash}
+                variant="primary"
+                loading={loadingAction === "wash"}
+                disabled={!!loadingAction || clean >= 100}
+              />
             </div>
           </section>
         )}
@@ -912,12 +941,14 @@ function ActionBtn({
   onClick,
   variant = "primary",
   disabled = false,
+  loading = false,
 }: {
   label: string;
   icon: string;
   onClick: () => void;
   variant?: "primary" | "pet" | "reward";
   disabled?: boolean;
+  loading?: boolean;
 }) {
   const styles: Record<string, string> = {
     primary:
@@ -927,27 +958,42 @@ function ActionBtn({
     reward:
       "bg-[var(--gradient-reward)] shadow-[var(--shadow-reward)] hover:shadow-[0_18px_0_-4px_oklch(0.65_0.18_70/0.5),0_24px_46px_-10px_oklch(0.84_0.16_80/0.65)] active:shadow-[0_4px_0_-2px_oklch(0.65_0.18_70/0.55)]",
   };
-  // Texto na mesma cor do ícone, com contraste reforçado para boa legibilidade
   const labelColor: Record<string, string> = {
-    primary: "text-[oklch(0.32_0.16_254)]", // azul profundo (🛁)
-    pet: "text-[oklch(0.36_0.18_350)]",     // rosa escuro (🎾)
-    reward: "text-[oklch(0.34_0.14_60)]",   // âmbar escuro (🦴)
+    primary: "text-[oklch(0.32_0.16_254)]",
+    pet: "text-[oklch(0.36_0.18_350)]",
+    reward: "text-[oklch(0.34_0.14_60)]",
   };
+  const spinnerColor: Record<string, string> = {
+    primary: "border-[oklch(0.32_0.16_254)]",
+    pet: "border-[oklch(0.36_0.18_350)]",
+    reward: "border-[oklch(0.34_0.14_60)]",
+  };
+  const isDisabled = disabled || loading;
   return (
     <button
       onClick={onClick}
-      disabled={disabled}
-      className={`group relative flex min-h-[88px] flex-col items-center justify-center gap-1.5 overflow-hidden rounded-2xl ${styles[variant]} px-2 py-3 ring-1 ring-white/60 transition-all duration-200 hover:-translate-y-1 hover:ring-2 hover:ring-white/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white active:translate-y-0.5 active:scale-95 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 disabled:saturate-50 disabled:shadow-none`}
+      disabled={isDisabled}
+      aria-busy={loading || undefined}
+      aria-label={label}
+      className={`group relative flex min-h-[88px] w-full min-w-0 flex-col items-center justify-center gap-1.5 overflow-hidden rounded-2xl ${styles[variant]} px-2 py-3 ring-1 ring-white/60 transition-all duration-200 hover:-translate-y-1 hover:ring-2 hover:ring-white/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white active:translate-y-0.5 active:scale-95 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-60 disabled:saturate-50 disabled:shadow-none motion-reduce:transition-none motion-reduce:transform-none motion-reduce:hover:translate-y-0 motion-reduce:hover:scale-100 motion-reduce:active:translate-y-0 motion-reduce:active:scale-100`}
     >
       <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2 rounded-t-2xl bg-white/30 group-hover:bg-white/40 group-active:bg-white/20" />
-      <span className="relative text-3xl drop-shadow transition-transform duration-200 group-hover:scale-110 group-hover:-rotate-6 group-active:scale-90 group-active:rotate-0">
-        {icon}
+      <span className="relative flex h-9 items-center justify-center text-3xl drop-shadow transition-transform duration-200 group-hover:scale-110 group-hover:-rotate-6 group-active:scale-90 group-active:rotate-0 motion-reduce:transition-none motion-reduce:transform-none motion-reduce:group-hover:scale-100 motion-reduce:group-hover:rotate-0 motion-reduce:group-active:scale-100">
+        {loading ? (
+          <span
+            aria-hidden="true"
+            className={`block h-5 w-5 animate-spin rounded-full border-2 border-t-transparent ${spinnerColor[variant]} motion-reduce:animate-none motion-reduce:opacity-70`}
+          />
+        ) : (
+          icon
+        )}
       </span>
       <span
-        className={`relative w-full text-center text-[13px] font-extrabold uppercase leading-tight tracking-wide drop-shadow-[0_1px_0_rgba(255,255,255,0.6)] ${labelColor[variant]}`}
+        className={`relative w-full min-w-0 truncate px-1 text-center text-[clamp(11px,2.6vw,13px)] font-extrabold uppercase leading-tight tracking-wide drop-shadow-[0_1px_0_rgba(255,255,255,0.6)] ${labelColor[variant]}`}
       >
         {label}
       </span>
+      {loading && <span className="sr-only">Carregando…</span>}
     </button>
   );
 }
