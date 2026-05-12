@@ -908,9 +908,15 @@ function Stat({ icon, label, value, color, pulse }: { icon: React.ReactNode; lab
 
 function ActionBtn({ label, icon, onClick, variant = "primary" }: { label: string; icon: string; onClick: () => void; variant?: "primary" | "pet" | "reward" }) {
   const styles: Record<string, string> = {
-    primary: "bg-[var(--gradient-hero)] text-primary-foreground shadow-[var(--shadow-pop)]",
-    pet: "bg-[var(--gradient-pet)] text-pet-foreground shadow-[var(--shadow-pet)]",
-    reward: "bg-[var(--gradient-reward)] text-reward-foreground shadow-[var(--shadow-reward)]",
+    primary: "bg-[var(--gradient-hero)] shadow-[var(--shadow-pop)]",
+    pet: "bg-[var(--gradient-pet)] shadow-[var(--shadow-pet)]",
+    reward: "bg-[var(--gradient-reward)] shadow-[var(--shadow-reward)]",
+  };
+  // Texto na mesma cor do ícone (emoji): Banho=azul, Brincar=rosa, Alimentar=amarelo
+  const labelColor: Record<string, string> = {
+    primary: "text-[oklch(0.45_0.18_254)]",   // azul (🛁)
+    pet: "text-[oklch(0.5_0.18_350)]",        // rosa (🎾/🐾)
+    reward: "text-[oklch(0.45_0.16_70)]",     // amarelo/âmbar (🦴)
   };
   return (
     <button
