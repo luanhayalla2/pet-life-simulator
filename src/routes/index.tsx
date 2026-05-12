@@ -906,26 +906,48 @@ function Stat({ icon, label, value, color, pulse }: { icon: React.ReactNode; lab
   );
 }
 
-function ActionBtn({ label, icon, onClick, variant = "primary" }: { label: string; icon: string; onClick: () => void; variant?: "primary" | "pet" | "reward" }) {
+function ActionBtn({
+  label,
+  icon,
+  onClick,
+  variant = "primary",
+  disabled = false,
+}: {
+  label: string;
+  icon: string;
+  onClick: () => void;
+  variant?: "primary" | "pet" | "reward";
+  disabled?: boolean;
+}) {
   const styles: Record<string, string> = {
-    primary: "bg-[var(--gradient-hero)] shadow-[var(--shadow-pop)]",
-    pet: "bg-[var(--gradient-pet)] shadow-[var(--shadow-pet)]",
-    reward: "bg-[var(--gradient-reward)] shadow-[var(--shadow-reward)]",
+    primary:
+      "bg-[var(--gradient-hero)] shadow-[var(--shadow-pop)] hover:shadow-[0_18px_0_-4px_oklch(0.55_0.16_254/0.45),0_24px_46px_-10px_oklch(0.65_0.16_254/0.55)] active:shadow-[0_4px_0_-2px_oklch(0.55_0.16_254/0.5)]",
+    pet:
+      "bg-[var(--gradient-pet)] shadow-[var(--shadow-pet)] hover:shadow-[0_22px_46px_-10px_oklch(0.78_0.18_340/0.7)] active:shadow-[0_6px_14px_-4px_oklch(0.78_0.18_340/0.55)]",
+    reward:
+      "bg-[var(--gradient-reward)] shadow-[var(--shadow-reward)] hover:shadow-[0_18px_0_-4px_oklch(0.65_0.18_70/0.5),0_24px_46px_-10px_oklch(0.84_0.16_80/0.65)] active:shadow-[0_4px_0_-2px_oklch(0.65_0.18_70/0.55)]",
   };
-  // Texto na mesma cor do ícone (emoji): Banho=azul, Brincar=rosa, Alimentar=amarelo
+  // Texto na mesma cor do ícone, com contraste reforçado para boa legibilidade
   const labelColor: Record<string, string> = {
-    primary: "text-[oklch(0.45_0.18_254)]",   // azul (🛁)
-    pet: "text-[oklch(0.5_0.18_350)]",        // rosa (🎾/🐾)
-    reward: "text-[oklch(0.45_0.16_70)]",     // amarelo/âmbar (🦴)
+    primary: "text-[oklch(0.32_0.16_254)]", // azul profundo (🛁)
+    pet: "text-[oklch(0.36_0.18_350)]",     // rosa escuro (🎾)
+    reward: "text-[oklch(0.34_0.14_60)]",   // âmbar escuro (🦴)
   };
   return (
     <button
       onClick={onClick}
-      className={`group relative flex flex-col items-center gap-1 overflow-hidden rounded-2xl ${styles[variant]} p-4 ring-1 ring-white/50 transition-transform hover:-translate-y-1 active:translate-y-0.5 active:scale-95`}
+      disabled={disabled}
+      className={`group relative flex min-h-[88px] flex-col items-center justify-center gap-1.5 overflow-hidden rounded-2xl ${styles[variant]} px-2 py-3 ring-1 ring-white/60 transition-all duration-200 hover:-translate-y-1 hover:ring-2 hover:ring-white/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white active:translate-y-0.5 active:scale-95 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 disabled:saturate-50 disabled:shadow-none`}
     >
-      <span className="absolute inset-x-0 top-0 h-1/2 rounded-t-2xl bg-white/25" />
-      <span className="relative text-3xl drop-shadow transition-transform group-hover:scale-110 group-active:scale-90">{icon}</span>
-      <span className={`relative text-xs font-extrabold uppercase tracking-wide drop-shadow-sm ${labelColor[variant]}`}>{label}</span>
+      <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2 rounded-t-2xl bg-white/30 group-hover:bg-white/40 group-active:bg-white/20" />
+      <span className="relative text-3xl drop-shadow transition-transform duration-200 group-hover:scale-110 group-hover:-rotate-6 group-active:scale-90 group-active:rotate-0">
+        {icon}
+      </span>
+      <span
+        className={`relative w-full text-center text-[13px] font-extrabold uppercase leading-tight tracking-wide drop-shadow-[0_1px_0_rgba(255,255,255,0.6)] ${labelColor[variant]}`}
+      >
+        {label}
+      </span>
     </button>
   );
 }
