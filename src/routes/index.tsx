@@ -147,6 +147,7 @@ function Index() {
   const [pendingImport, setPendingImport] = useState<any | null>(null);
   const [claimedMissions, setClaimedMissions] = useState<Mission[]>([]);
   const [showRewards, setShowRewards] = useState(false);
+  const [loadingAction, setLoadingAction] = useState<null | "feed" | "play" | "wash">(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const lastEventRef = useRef<number>(Date.now());
