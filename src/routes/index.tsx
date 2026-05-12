@@ -391,26 +391,33 @@ function Index() {
   };
 
   // ---------- ACTIONS ----------
-  const feed = () => {
+  const withLoading = (key: "feed" | "play" | "wash", fn: () => void, ms = 450) => {
+    if (loadingAction) return;
+    setLoadingAction(key);
+    try { fn(); } finally {
+      setTimeout(() => setLoadingAction((cur) => (cur === key ? null : cur)), ms);
+    }
+  };
+  const feed = () => withLoading("feed", () => {
     setHunger((v) => Math.min(100, v + 10)); pulseStat("hunger");
     setCoins((c) => c + 2);
     spawnParticles("🦴", 4); playSound("pop"); triggerBounce();
     progressMission("feed"); gainXp(3);
     logAction("feed", "Alimentou o pet", { hunger: 10, coins: 2 });
-  };
-  const play = () => {
+  });
+  const play = () => withLoading("play", () => {
     setHappy((v) => Math.min(100, v + 10)); pulseStat("happy");
     setCoins((c) => c + 3);
     spawnParticles("❤️", 4); playSound("pop"); triggerBounce();
     progressMission("play"); gainXp(3);
     logAction("play", "Brincou com o pet", { happy: 10, coins: 3 });
-  };
-  const wash = () => {
+  });
+  const wash = () => withLoading("wash", () => {
     setClean((v) => Math.min(100, v + 10)); pulseStat("clean");
     spawnParticles("💧", 4); playSound("pop"); triggerBounce();
     progressMission("wash"); gainXp(3);
     logAction("wash", "Lavou o pet", { clean: 10 });
-  };
+  });
 
   const buy = (item: Item) => {
     if (coins < item.price) { playSound("alert"); toast.error("Moedas insuficientes"); return; }
