@@ -925,7 +925,7 @@ function ActionBtn({ label, icon, onClick, variant = "primary" }: { label: strin
     >
       <span className="absolute inset-x-0 top-0 h-1/2 rounded-t-2xl bg-white/25" />
       <span className="relative text-3xl drop-shadow transition-transform group-hover:scale-110 group-active:scale-90">{icon}</span>
-      <span className="relative text-xs font-extrabold uppercase tracking-wide">{label}</span>
+      <span className={`relative text-xs font-extrabold uppercase tracking-wide drop-shadow-sm ${labelColor[variant]}`}>{label}</span>
     </button>
   );
 }
