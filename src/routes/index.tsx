@@ -1,9 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Heart, Coins, ShoppingBag, Sparkles, Bone, Gamepad2, Droplet, LogIn, LogOut, Trophy, Download, Upload, Zap, History as HistoryIcon, Gift, AlertTriangle } from "lucide-react";
+import { Heart, Coins, ShoppingBag, Sparkles, Bone, Gamepad2, Droplet, LogIn, LogOut, Trophy, Download, Upload, Zap, History as HistoryIcon, Gift, AlertTriangle, Shirt, Home, MessageCircle, Send, Dumbbell } from "lucide-react";
 import { toast } from "sonner";
 import petImg from "@/assets/pet-mel.png";
 import { supabase } from "@/integrations/supabase/client";
+import { talkToPet } from "@/lib/pet-chat.functions";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -15,7 +17,7 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-type Tab = "pet" | "shop" | "missions" | "history" | "life";
+type Tab = "pet" | "shop" | "closet" | "toys" | "activities" | "home" | "chat" | "missions" | "history" | "life";
 
 interface HistoryEntry {
   id: string;
