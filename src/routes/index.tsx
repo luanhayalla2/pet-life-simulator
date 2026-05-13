@@ -1225,9 +1225,14 @@ function Index() {
 
       {/* Bottom nav */}
       <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-border bg-card/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-md items-center justify-around px-1 py-2">
+        <div className="mx-auto flex max-w-md items-center gap-1 overflow-x-auto px-2 py-2">
           <NavBtn active={tab === "pet"} onClick={() => setTab("pet")} icon={<Heart />} label="Pet" />
           <NavBtn active={tab === "shop"} onClick={() => setTab("shop")} icon={<ShoppingBag />} label="Loja" />
+          <NavBtn active={tab === "closet"} onClick={() => setTab("closet")} icon={<Shirt />} label="Roupas" />
+          <NavBtn active={tab === "toys"} onClick={() => setTab("toys")} icon={<Gift />} label="Brinq." />
+          <NavBtn active={tab === "activities"} onClick={() => setTab("activities")} icon={<Dumbbell />} label="Ativid." />
+          <NavBtn active={tab === "home"} onClick={() => setTab("home")} icon={<Home />} label="Casa" />
+          <NavBtn active={tab === "chat"} onClick={() => setTab("chat")} icon={<MessageCircle />} label="Chat" />
           <NavBtn active={tab === "missions"} onClick={() => setTab("missions")} icon={<Trophy />} label="Missões" />
           <NavBtn active={tab === "history"} onClick={() => setTab("history")} icon={<HistoryIcon />} label="Histórico" />
           <NavBtn active={tab === "life"} onClick={() => setTab("life")} icon={<Gamepad2 />} label="Vida" />
@@ -1359,7 +1364,7 @@ function NavBtn({ active, onClick, icon, label }: { active: boolean; onClick: ()
   return (
     <button
       onClick={onClick}
-      className={`relative flex flex-1 flex-col items-center gap-0.5 rounded-2xl py-2 text-[11px] font-extrabold uppercase tracking-wide transition-all ${active ? "text-primary-foreground" : "text-muted-foreground"}`}
+      className={`relative flex min-w-[68px] flex-col items-center gap-0.5 rounded-2xl py-2 text-[10px] font-extrabold uppercase tracking-wide transition-all ${active ? "text-primary-foreground" : "text-muted-foreground"}`}
     >
       {active && (
         <span className="absolute inset-x-1 inset-y-1 -z-0 rounded-2xl bg-[var(--gradient-hero)] shadow-[var(--shadow-soft)] animate-pop-in" />
