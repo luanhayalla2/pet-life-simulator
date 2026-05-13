@@ -1,9 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Heart, Coins, ShoppingBag, Sparkles, Bone, Gamepad2, Droplet, LogIn, LogOut, Trophy, Download, Upload, Zap, History as HistoryIcon, Gift, AlertTriangle } from "lucide-react";
+import { Heart, Coins, ShoppingBag, Sparkles, Bone, Gamepad2, Droplet, LogIn, LogOut, Trophy, Download, Upload, Zap, History as HistoryIcon, Gift, AlertTriangle, Shirt, Home, MessageCircle, Send, Dumbbell } from "lucide-react";
 import { toast } from "sonner";
 import petImg from "@/assets/pet-mel.png";
 import { supabase } from "@/integrations/supabase/client";
+import { talkToPet } from "@/lib/pet-chat.functions";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -15,7 +17,7 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-type Tab = "pet" | "shop" | "missions" | "history" | "life";
+type Tab = "pet" | "shop" | "closet" | "toys" | "activities" | "home" | "chat" | "missions" | "history" | "life";
 
 interface HistoryEntry {
   id: string;
@@ -44,6 +46,69 @@ const SHOP_ITEMS: Item[] = [
   { id: "toy", name: "Brinquedo", icon: "🧸", price: 40, effect: { happy: 50 } },
   { id: "spa", name: "Spa", icon: "✨", price: 60, effect: { clean: 60, happy: 20 } },
 ];
+
+type Rarity = "Comum" | "Raro" | "Épico" | "Lendário" | "Evento especial ✨";
+type ClothingCategory = "Camisas" | "Bonés" | "Óculos" | "Sapatos" | "Acessórios" | "Itens raros";
+
+interface ClothingItem {
+  id: string;
+  name: string;
+  icon: string;
+  category: ClothingCategory;
+  rarity: Rarity;
+  price: number;
+  buff: string;
+  colors: string[];
+  unlockLevel?: number;
+}
+
+const CLOTHING_ITEMS: ClothingItem[] = [
+  { id: "sport_tee", name: "Roupa esportiva", icon: "👕", category: "Camisas", rarity: "Comum", price: 0, buff: "+energia", colors: ["Azul", "Rosa", "Verde"] },
+  { id: "happy_cap", name: "Boné feliz", icon: "🧢", category: "Bonés", rarity: "Raro", price: 35, buff: "+felicidade", colors: ["Amarelo", "Azul", "Vermelho"] },
+  { id: "star_glasses", name: "Óculos estrela", icon: "👓", category: "Óculos", rarity: "Épico", price: 70, buff: "+XP", colors: ["Dourado", "Roxo", "Preto"], unlockLevel: 2 },
+  { id: "speed_shoes", name: "Tênis veloz", icon: "👟", category: "Sapatos", rarity: "Raro", price: 55, buff: "+mini-games", colors: ["Branco", "Neon", "Azul"] },
+  { id: "bow_party", name: "Laço festa", icon: "🎀", category: "Acessórios", rarity: "Evento especial ✨", price: 95, buff: "+moedas", colors: ["Rosa", "Lilás", "Dourado"], unlockLevel: 3 },
+  { id: "royal_crown", name: "Coroa real", icon: "👑", category: "Itens raros", rarity: "Lendário", price: 150, buff: "brilho especial", colors: ["Ouro", "Prata", "Safira"], unlockLevel: 4 },
+];
+
+interface ToyItem {
+  id: string;
+  name: string;
+  icon: string;
+  price: number;
+  effect: string;
+  happy: number;
+  xp: number;
+  coins: number;
+}
+
+const TOY_ITEMS: ToyItem[] = [
+  { id: "ball", name: "Bola", icon: "🎾", price: 0, effect: "animação de pulo", happy: 12, xp: 5, coins: 2 },
+  { id: "teddy", name: "Ursinho", icon: "🧸", price: 35, effect: "carinho extra", happy: 16, xp: 4, coins: 1 },
+  { id: "yoyo", name: "Io-iô", icon: "🪀", price: 45, effect: "combo de XP", happy: 10, xp: 9, coins: 2 },
+  { id: "car", name: "Carrinho", icon: "🚗", price: 60, effect: "corrida rápida", happy: 13, xp: 7, coins: 5 },
+  { id: "chew", name: "Mordedor", icon: "🦴", price: 25, effect: "acalma o pet", happy: 9, xp: 3, coins: 1 },
+  { id: "ufo", name: "Brinquedo futurista", icon: "🛸", price: 120, effect: "partículas sci-fi", happy: 20, xp: 12, coins: 8 },
+];
+
+const ACTIVITY_ITEMS = [
+  { id: "ball", name: "Jogar bola", icon: "🎾", mini: "pegar moedas", hunger: -6, happy: 18, clean: -4, xp: 8, coins: 5 },
+  { id: "run", name: "Correr", icon: "🏃", mini: "corrida", hunger: -10, happy: 14, clean: -6, xp: 10, coins: 4 },
+  { id: "sleep", name: "Dormir", icon: "💤", mini: "recuperação", hunger: -2, happy: 8, clean: 0, xp: 4, coins: 0 },
+  { id: "eat", name: "Comer", icon: "🍖", mini: "receitas", hunger: 22, happy: 5, clean: -2, xp: 5, coins: -8 },
+  { id: "bath", name: "Tomar banho", icon: "🚿", mini: "memória", hunger: 0, happy: 4, clean: 24, xp: 6, coins: -6 },
+  { id: "photo", name: "Tirar foto", icon: "📸", mini: "moda", hunger: 0, happy: 12, clean: 0, xp: 7, coins: 6 },
+  { id: "dance", name: "Dançar", icon: "🎵", mini: "parkour", hunger: -8, happy: 20, clean: -3, xp: 12, coins: 7 },
+];
+
+const HOME_ZONES = [
+  { name: "Quarto", icon: "🛏️", details: "cama, TV, brinquedos e decoração" },
+  { name: "Jardim", icon: "🌳", details: "árvores, piscina, céu animado e brinquedos externos" },
+  { name: "Cozinha", icon: "🍳", details: "alimentar pet e receitas especiais" },
+  { name: "Sala Gamer", icon: "🎮", details: "mini-games, computador e console" },
+];
+
+interface ChatMessage { id: string; role: "user" | "pet"; content: string; }
 
 interface Mission {
   id: string;
@@ -148,6 +213,17 @@ function Index() {
   const [claimedMissions, setClaimedMissions] = useState<Mission[]>([]);
   const [showRewards, setShowRewards] = useState(false);
   const [loadingAction, setLoadingAction] = useState<null | "feed" | "play" | "wash">(null);
+  const [ownedClothes, setOwnedClothes] = useState<string[]>(["sport_tee"]);
+  const [equippedClothing, setEquippedClothing] = useState("sport_tee");
+  const [selectedColor, setSelectedColor] = useState("Azul");
+  const [ownedToys, setOwnedToys] = useState<string[]>(["ball"]);
+  const [selectedZone, setSelectedZone] = useState(HOME_ZONES[0]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    { id: "hello", role: "pet", content: "Oi! Eu sou a Mel. Bora brincar ou decorar minha casinha? 🐾" },
+  ]);
+  const [chatLoading, setChatLoading] = useState(false);
+  const askPet = useServerFn(talkToPet);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const lastEventRef = useRef<number>(Date.now());
@@ -273,6 +349,7 @@ function Index() {
   useEffect(() => {
     const save = { coins, hunger, happy, clean, xp, level, missions, missionsDate };
     localStorage.setItem("petlife_save", JSON.stringify(save));
+    localStorage.setItem("petlife_style", JSON.stringify({ ownedClothes, equippedClothing, selectedColor, ownedToys }));
     if (!userId) return;
     if (persistRef.current) clearTimeout(persistRef.current);
     persistRef.current = setTimeout(() => {
@@ -285,7 +362,19 @@ function Index() {
         missions_date: missionsDate,
       }, { onConflict: "user_id" }).then(() => {});
     }, 800);
-  }, [userId, coins, hunger, happy, clean, xp, level, missions, missionsDate]);
+  }, [userId, coins, hunger, happy, clean, xp, level, missions, missionsDate, ownedClothes, equippedClothing, selectedColor, ownedToys]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("petlife_style");
+      if (!raw) return;
+      const style = JSON.parse(raw);
+      if (Array.isArray(style.ownedClothes)) setOwnedClothes(style.ownedClothes);
+      if (typeof style.equippedClothing === "string") setEquippedClothing(style.equippedClothing);
+      if (typeof style.selectedColor === "string") setSelectedColor(style.selectedColor);
+      if (Array.isArray(style.ownedToys)) setOwnedToys(style.ownedToys);
+    } catch {}
+  }, []);
 
   // ---------- AUDIO ----------
   const playSound = useCallback((type: "coin" | "pop" | "yay" | "buy" | "alert") => {
@@ -434,6 +523,65 @@ function Index() {
       clean: item.effect.clean ?? 0,
       coins: -item.price,
     });
+  };
+
+  const buyClothing = (item: ClothingItem) => {
+    if (item.unlockLevel && level < item.unlockLevel) { toast.error(`Desbloqueia no nível ${item.unlockLevel}`); return; }
+    if (ownedClothes.includes(item.id)) { setEquippedClothing(item.id); setSelectedColor(item.colors[0]); spawnParticles(item.icon, 5); return; }
+    if (coins < item.price) { playSound("alert"); toast.error("Moedas insuficientes"); return; }
+    setCoins((c) => c - item.price);
+    setOwnedClothes((items) => [...items, item.id]);
+    setEquippedClothing(item.id);
+    setSelectedColor(item.colors[0]);
+    spawnParticles(item.icon, 8); playSound("buy"); gainXp(item.rarity === "Lendário" ? 20 : 8);
+    logAction("clothing", `Equipou ${item.name} ${item.icon}`, { coins: -item.price, happy: 4 });
+    setHappy((v) => clamp(v + 4));
+    toast.success(`${item.name} equipado`, { description: `${item.buff} · ${item.rarity}` });
+  };
+
+  const useToy = (toy: ToyItem) => {
+    const wasOwned = ownedToys.includes(toy.id);
+    if (!wasOwned) {
+      if (coins < toy.price) { playSound("alert"); toast.error("Moedas insuficientes"); return; }
+      setCoins((c) => c - toy.price);
+      setOwnedToys((items) => [...items, toy.id]);
+      toast.success(`${toy.name} desbloqueado`);
+    }
+    setHappy((v) => clamp(v + toy.happy)); pulseStat("happy");
+    setCoins((c) => Math.max(0, c + toy.coins));
+    gainXp(toy.xp); spawnParticles(toy.icon, toy.id === "ufo" ? 12 : 6); playSound("pop"); triggerBounce();
+    logAction("toy", `Brincou com ${toy.name} ${toy.icon}`, { happy: toy.happy, coins: toy.coins });
+  };
+
+  const doActivity = (activity: (typeof ACTIVITY_ITEMS)[number]) => {
+    if (activity.coins < 0 && coins < Math.abs(activity.coins)) { playSound("alert"); toast.error("Moedas insuficientes"); return; }
+    setHunger((v) => clamp(v + activity.hunger));
+    setHappy((v) => clamp(v + activity.happy));
+    setClean((v) => clamp(v + activity.clean));
+    setCoins((c) => Math.max(0, c + activity.coins));
+    pulseStat(activity.clean > activity.happy ? "clean" : activity.hunger > activity.happy ? "hunger" : "happy");
+    gainXp(activity.xp); spawnParticles(activity.icon, 7); playSound(activity.coins > 0 ? "coin" : "yay"); triggerBounce();
+    logAction("activity", `${activity.name} · ${activity.mini}`, { hunger: activity.hunger, happy: activity.happy, clean: activity.clean, coins: activity.coins });
+  };
+
+  const sendPetMessage = async () => {
+    const text = chatInput.trim();
+    if (!text || chatLoading) return;
+    const userMessage: ChatMessage = { id: `u_${Date.now()}`, role: "user", content: text };
+    setChatMessages((msgs) => [...msgs, userMessage]);
+    setChatInput("");
+    setChatLoading(true);
+    try {
+      const result = await askPet({ data: { message: text, petName, mood: (happy + hunger + clean) / 3, hunger, happy, clean } });
+      setChatMessages((msgs) => [...msgs, { id: `p_${Date.now()}`, role: "pet", content: result.reply }]);
+      spawnParticles("💬", 4);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "O pet ficou sem resposta agora.";
+      setChatMessages((msgs) => [...msgs, { id: `p_${Date.now()}`, role: "pet", content: "Au... minha conexão falhou, tenta de novo? 🐾" }]);
+      toast.error(message);
+    } finally {
+      setChatLoading(false);
+    }
   };
 
   // ---------- RANDOM EVENTS ----------
@@ -669,6 +817,206 @@ function Index() {
           </section>
         )}
 
+        {tab === "closet" && (
+          <section className="space-y-4">
+            <div className="rounded-3xl bg-[var(--gradient-pet)] p-6 text-pet-foreground shadow-[var(--shadow-pet)]">
+              <div className="flex items-center gap-2">
+                <Shirt className="h-5 w-5" />
+                <h2 className="text-xl font-bold">Guarda-roupa</h2>
+              </div>
+              <p className="mt-1 text-sm opacity-90">Roupas, raridades, cores e buffs especiais</p>
+              <div className="mt-4 rounded-2xl bg-white/40 p-3 text-sm font-bold">
+                Equipado: {CLOTHING_ITEMS.find((item) => item.id === equippedClothing)?.icon} {CLOTHING_ITEMS.find((item) => item.id === equippedClothing)?.name} · {selectedColor}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {CLOTHING_ITEMS.map((item) => {
+                const owned = ownedClothes.includes(item.id);
+                const locked = !!item.unlockLevel && level < item.unlockLevel;
+                const equipped = equippedClothing === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => buyClothing(item)}
+                    disabled={locked || (!owned && coins < item.price)}
+                    className={`relative overflow-hidden rounded-2xl border bg-card p-4 text-left shadow-sm transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-soft)] active:scale-95 disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none motion-reduce:hover:translate-y-0 ${equipped ? "border-pet ring-2 ring-pet/30" : "border-border"}`}
+                  >
+                    <div className="text-4xl drop-shadow">{item.icon}</div>
+                    <p className="mt-2 text-sm font-extrabold leading-tight">{item.name}</p>
+                    <p className="mt-1 text-[11px] font-bold text-muted-foreground">{item.category}</p>
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold">{item.rarity}</span>
+                      <span className="rounded-full bg-pet/10 px-2 py-0.5 text-[10px] font-bold text-pet">{item.buff}</span>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between text-xs font-extrabold">
+                      <span>{owned ? "Equipar" : `${item.price} 🪙`}</span>
+                      {locked ? <span>Nv {item.unlockLevel}</span> : equipped ? <span>✅</span> : null}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="rounded-2xl border border-border bg-card p-4">
+              <p className="mb-3 text-sm font-bold">Trocar cor</p>
+              <div className="flex flex-wrap gap-2">
+                {(CLOTHING_ITEMS.find((item) => item.id === equippedClothing)?.colors ?? []).map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => setSelectedColor(color)}
+                    className={`rounded-full px-3 py-1.5 text-xs font-bold transition-all active:scale-95 ${selectedColor === color ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}
+                  >
+                    {color}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {tab === "toys" && (
+          <section className="space-y-4">
+            <div className="rounded-3xl bg-[var(--gradient-reward)] p-6 text-reward-foreground shadow-[var(--shadow-reward)]">
+              <h2 className="text-xl font-bold">Brinquedos</h2>
+              <p className="mt-1 text-sm opacity-90">Aumentam felicidade, XP, moedas e desbloqueiam animações</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {TOY_ITEMS.map((toy) => {
+                const owned = ownedToys.includes(toy.id);
+                return (
+                  <button
+                    key={toy.id}
+                    onClick={() => useToy(toy)}
+                    disabled={!owned && coins < toy.price}
+                    className="rounded-2xl border border-border bg-card p-4 text-left shadow-sm transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-pop)] active:scale-95 disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+                  >
+                    <div className="text-4xl">{toy.icon}</div>
+                    <p className="mt-2 font-extrabold">{toy.name}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{toy.effect}</p>
+                    <div className="mt-3 grid grid-cols-3 gap-1 text-[10px] font-bold">
+                      <span className="rounded-full bg-pet/10 px-2 py-1 text-pet">+{toy.happy} ❤️</span>
+                      <span className="rounded-full bg-primary/10 px-2 py-1 text-primary">+{toy.xp} XP</span>
+                      <span className="rounded-full bg-money/10 px-2 py-1 text-money">+{toy.coins} 🪙</span>
+                    </div>
+                    <p className="mt-3 text-xs font-extrabold">{owned ? "Brincar" : `Desbloquear ${toy.price} 🪙`}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {tab === "activities" && (
+          <section className="space-y-4">
+            <div className="rounded-3xl bg-[var(--gradient-hero)] p-6 text-primary-foreground shadow-[var(--shadow-soft)]">
+              <div className="flex items-center gap-2">
+                <Dumbbell className="h-5 w-5" />
+                <h2 className="text-xl font-bold">Atividades</h2>
+              </div>
+              <p className="mt-1 text-sm opacity-90">Mini-games rápidos: corrida, memória, parkour e caça ao tesouro</p>
+            </div>
+            <div className="space-y-2">
+              {ACTIVITY_ITEMS.map((activity) => (
+                <button
+                  key={activity.id}
+                  onClick={() => doActivity(activity)}
+                  disabled={activity.coins < 0 && coins < Math.abs(activity.coins)}
+                  className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-soft)] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+                >
+                  <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-muted text-3xl">{activity.icon}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-extrabold">{activity.name}</span>
+                    <span className="block text-xs text-muted-foreground">Mini-game: {activity.mini}</span>
+                  </span>
+                  <span className="text-right text-[11px] font-bold text-muted-foreground">
+                    +{activity.xp} XP<br />{activity.coins >= 0 ? `+${activity.coins}` : activity.coins} 🪙
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {tab === "home" && (
+          <section className="space-y-4">
+            <div className="relative min-h-[380px] overflow-hidden rounded-[2rem] border border-white/60 bg-[var(--gradient-bg)] p-5 shadow-[var(--shadow-soft)]">
+              <div className="absolute inset-x-0 top-4 flex justify-around text-4xl opacity-80 animate-bg-drift" aria-hidden>
+                <span>☁️</span><span>☁️</span><span>☀️</span>
+              </div>
+              <div className="absolute bottom-0 left-0 right-0 h-24 bg-money/20" aria-hidden />
+              <div className="relative z-10">
+                <div className="flex items-center gap-2">
+                  <Home className="h-5 w-5 text-primary" />
+                  <h2 className="text-xl font-extrabold">Casinha da Mel</h2>
+                </div>
+                <p className="text-sm text-muted-foreground">{selectedZone.name}: {selectedZone.details}</p>
+              </div>
+              <div className="absolute bottom-12 left-6 right-6 h-44 rounded-t-[2rem] bg-card/80 p-4 shadow-[var(--shadow-soft)] ring-1 ring-white/70">
+                <div className="mx-auto h-20 w-28 rounded-t-full bg-pet/20 text-center text-5xl leading-[5rem]">{selectedZone.icon}</div>
+                <div className="absolute bottom-5 left-1/2 h-20 w-20 -translate-x-1/2 animate-pet-walk rounded-full bg-white/70 shadow-[var(--shadow-glow)] ring-2 ring-white/80">
+                  <img src={petImg} alt={`${petName} andando pela casinha`} className="h-20 w-20 object-contain" />
+                </div>
+                <span className="absolute right-6 top-8 animate-float text-3xl">✨</span>
+                <span className="absolute left-8 top-20 animate-float text-2xl" style={{ animationDelay: "1s" }}>🧸</span>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {HOME_ZONES.map((zone) => (
+                <button
+                  key={zone.name}
+                  onClick={() => setSelectedZone(zone)}
+                  className={`rounded-2xl border p-4 text-left transition-all active:scale-95 ${selectedZone.name === zone.name ? "border-primary bg-primary/10" : "border-border bg-card"}`}
+                >
+                  <div className="text-3xl">{zone.icon}</div>
+                  <p className="mt-2 font-extrabold">{zone.name}</p>
+                  <p className="text-xs text-muted-foreground">{zone.details}</p>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {tab === "chat" && (
+          <section className="space-y-4">
+            <div className="rounded-3xl bg-[var(--gradient-pet)] p-6 text-pet-foreground shadow-[var(--shadow-pet)]">
+              <div className="flex items-center gap-2">
+                <MessageCircle className="h-5 w-5" />
+                <h2 className="text-xl font-bold">Conversar com {petName}</h2>
+              </div>
+              <p className="mt-1 text-sm opacity-90">Ela responde ao seu humor, fome, felicidade e limpeza</p>
+            </div>
+            <div className="min-h-[360px] space-y-3 rounded-2xl border border-border bg-card p-4">
+              {chatMessages.map((message) => (
+                <div key={message.id} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+                  <div className={`max-w-[82%] rounded-2xl px-4 py-2 text-sm font-medium ${message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}>
+                    {message.content}
+                  </div>
+                </div>
+              ))}
+              {chatLoading && <div className="text-sm font-semibold text-muted-foreground">{petName} está pensando…</div>}
+            </div>
+            <form
+              className="flex gap-2"
+              onSubmit={(e) => { e.preventDefault(); sendPetMessage(); }}
+            >
+              <input
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                maxLength={280}
+                placeholder="Fale com seu pet..."
+                className="min-w-0 flex-1 rounded-2xl border border-input bg-card px-4 py-3 text-sm outline-none ring-ring transition focus:ring-2"
+              />
+              <button
+                type="submit"
+                disabled={!chatInput.trim() || chatLoading}
+                className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-[var(--shadow-soft)] active:scale-95 disabled:opacity-50"
+                aria-label="Enviar mensagem"
+              >
+                <Send className="h-5 w-5" />
+              </button>
+            </form>
+          </section>
+        )}
+
         {tab === "missions" && (
           <section className="space-y-4">
             <div className="rounded-3xl bg-[var(--gradient-reward)] p-6 text-reward-foreground shadow-[var(--shadow-soft)]">
@@ -877,9 +1225,14 @@ function Index() {
 
       {/* Bottom nav */}
       <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-border bg-card/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-md items-center justify-around px-1 py-2">
+        <div className="mx-auto flex max-w-md items-center gap-1 overflow-x-auto px-2 py-2">
           <NavBtn active={tab === "pet"} onClick={() => setTab("pet")} icon={<Heart />} label="Pet" />
           <NavBtn active={tab === "shop"} onClick={() => setTab("shop")} icon={<ShoppingBag />} label="Loja" />
+          <NavBtn active={tab === "closet"} onClick={() => setTab("closet")} icon={<Shirt />} label="Roupas" />
+          <NavBtn active={tab === "toys"} onClick={() => setTab("toys")} icon={<Gift />} label="Brinq." />
+          <NavBtn active={tab === "activities"} onClick={() => setTab("activities")} icon={<Dumbbell />} label="Ativid." />
+          <NavBtn active={tab === "home"} onClick={() => setTab("home")} icon={<Home />} label="Casa" />
+          <NavBtn active={tab === "chat"} onClick={() => setTab("chat")} icon={<MessageCircle />} label="Chat" />
           <NavBtn active={tab === "missions"} onClick={() => setTab("missions")} icon={<Trophy />} label="Missões" />
           <NavBtn active={tab === "history"} onClick={() => setTab("history")} icon={<HistoryIcon />} label="Histórico" />
           <NavBtn active={tab === "life"} onClick={() => setTab("life")} icon={<Gamepad2 />} label="Vida" />
@@ -1011,7 +1364,7 @@ function NavBtn({ active, onClick, icon, label }: { active: boolean; onClick: ()
   return (
     <button
       onClick={onClick}
-      className={`relative flex flex-1 flex-col items-center gap-0.5 rounded-2xl py-2 text-[11px] font-extrabold uppercase tracking-wide transition-all ${active ? "text-primary-foreground" : "text-muted-foreground"}`}
+      className={`relative flex min-w-[68px] flex-col items-center gap-0.5 rounded-2xl py-2 text-[10px] font-extrabold uppercase tracking-wide transition-all ${active ? "text-primary-foreground" : "text-muted-foreground"}`}
     >
       {active && (
         <span className="absolute inset-x-1 inset-y-1 -z-0 rounded-2xl bg-[var(--gradient-hero)] shadow-[var(--shadow-soft)] animate-pop-in" />
