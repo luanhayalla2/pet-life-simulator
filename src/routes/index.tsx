@@ -817,6 +817,206 @@ function Index() {
           </section>
         )}
 
+        {tab === "closet" && (
+          <section className="space-y-4">
+            <div className="rounded-3xl bg-[var(--gradient-pet)] p-6 text-pet-foreground shadow-[var(--shadow-pet)]">
+              <div className="flex items-center gap-2">
+                <Shirt className="h-5 w-5" />
+                <h2 className="text-xl font-bold">Guarda-roupa</h2>
+              </div>
+              <p className="mt-1 text-sm opacity-90">Roupas, raridades, cores e buffs especiais</p>
+              <div className="mt-4 rounded-2xl bg-white/40 p-3 text-sm font-bold">
+                Equipado: {CLOTHING_ITEMS.find((item) => item.id === equippedClothing)?.icon} {CLOTHING_ITEMS.find((item) => item.id === equippedClothing)?.name} · {selectedColor}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {CLOTHING_ITEMS.map((item) => {
+                const owned = ownedClothes.includes(item.id);
+                const locked = !!item.unlockLevel && level < item.unlockLevel;
+                const equipped = equippedClothing === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => buyClothing(item)}
+                    disabled={locked || (!owned && coins < item.price)}
+                    className={`relative overflow-hidden rounded-2xl border bg-card p-4 text-left shadow-sm transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-soft)] active:scale-95 disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none motion-reduce:hover:translate-y-0 ${equipped ? "border-pet ring-2 ring-pet/30" : "border-border"}`}
+                  >
+                    <div className="text-4xl drop-shadow">{item.icon}</div>
+                    <p className="mt-2 text-sm font-extrabold leading-tight">{item.name}</p>
+                    <p className="mt-1 text-[11px] font-bold text-muted-foreground">{item.category}</p>
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold">{item.rarity}</span>
+                      <span className="rounded-full bg-pet/10 px-2 py-0.5 text-[10px] font-bold text-pet">{item.buff}</span>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between text-xs font-extrabold">
+                      <span>{owned ? "Equipar" : `${item.price} 🪙`}</span>
+                      {locked ? <span>Nv {item.unlockLevel}</span> : equipped ? <span>✅</span> : null}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="rounded-2xl border border-border bg-card p-4">
+              <p className="mb-3 text-sm font-bold">Trocar cor</p>
+              <div className="flex flex-wrap gap-2">
+                {(CLOTHING_ITEMS.find((item) => item.id === equippedClothing)?.colors ?? []).map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => setSelectedColor(color)}
+                    className={`rounded-full px-3 py-1.5 text-xs font-bold transition-all active:scale-95 ${selectedColor === color ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}
+                  >
+                    {color}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {tab === "toys" && (
+          <section className="space-y-4">
+            <div className="rounded-3xl bg-[var(--gradient-reward)] p-6 text-reward-foreground shadow-[var(--shadow-reward)]">
+              <h2 className="text-xl font-bold">Brinquedos</h2>
+              <p className="mt-1 text-sm opacity-90">Aumentam felicidade, XP, moedas e desbloqueiam animações</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {TOY_ITEMS.map((toy) => {
+                const owned = ownedToys.includes(toy.id);
+                return (
+                  <button
+                    key={toy.id}
+                    onClick={() => useToy(toy)}
+                    disabled={!owned && coins < toy.price}
+                    className="rounded-2xl border border-border bg-card p-4 text-left shadow-sm transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-pop)] active:scale-95 disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+                  >
+                    <div className="text-4xl">{toy.icon}</div>
+                    <p className="mt-2 font-extrabold">{toy.name}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{toy.effect}</p>
+                    <div className="mt-3 grid grid-cols-3 gap-1 text-[10px] font-bold">
+                      <span className="rounded-full bg-pet/10 px-2 py-1 text-pet">+{toy.happy} ❤️</span>
+                      <span className="rounded-full bg-primary/10 px-2 py-1 text-primary">+{toy.xp} XP</span>
+                      <span className="rounded-full bg-money/10 px-2 py-1 text-money">+{toy.coins} 🪙</span>
+                    </div>
+                    <p className="mt-3 text-xs font-extrabold">{owned ? "Brincar" : `Desbloquear ${toy.price} 🪙`}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {tab === "activities" && (
+          <section className="space-y-4">
+            <div className="rounded-3xl bg-[var(--gradient-hero)] p-6 text-primary-foreground shadow-[var(--shadow-soft)]">
+              <div className="flex items-center gap-2">
+                <Dumbbell className="h-5 w-5" />
+                <h2 className="text-xl font-bold">Atividades</h2>
+              </div>
+              <p className="mt-1 text-sm opacity-90">Mini-games rápidos: corrida, memória, parkour e caça ao tesouro</p>
+            </div>
+            <div className="space-y-2">
+              {ACTIVITY_ITEMS.map((activity) => (
+                <button
+                  key={activity.id}
+                  onClick={() => doActivity(activity)}
+                  disabled={activity.coins < 0 && coins < Math.abs(activity.coins)}
+                  className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-soft)] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+                >
+                  <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-muted text-3xl">{activity.icon}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-extrabold">{activity.name}</span>
+                    <span className="block text-xs text-muted-foreground">Mini-game: {activity.mini}</span>
+                  </span>
+                  <span className="text-right text-[11px] font-bold text-muted-foreground">
+                    +{activity.xp} XP<br />{activity.coins >= 0 ? `+${activity.coins}` : activity.coins} 🪙
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {tab === "home" && (
+          <section className="space-y-4">
+            <div className="relative min-h-[380px] overflow-hidden rounded-[2rem] border border-white/60 bg-[var(--gradient-bg)] p-5 shadow-[var(--shadow-soft)]">
+              <div className="absolute inset-x-0 top-4 flex justify-around text-4xl opacity-80 animate-bg-drift" aria-hidden>
+                <span>☁️</span><span>☁️</span><span>☀️</span>
+              </div>
+              <div className="absolute bottom-0 left-0 right-0 h-24 bg-money/20" aria-hidden />
+              <div className="relative z-10">
+                <div className="flex items-center gap-2">
+                  <Home className="h-5 w-5 text-primary" />
+                  <h2 className="text-xl font-extrabold">Casinha da Mel</h2>
+                </div>
+                <p className="text-sm text-muted-foreground">{selectedZone.name}: {selectedZone.details}</p>
+              </div>
+              <div className="absolute bottom-12 left-6 right-6 h-44 rounded-t-[2rem] bg-card/80 p-4 shadow-[var(--shadow-soft)] ring-1 ring-white/70">
+                <div className="mx-auto h-20 w-28 rounded-t-full bg-pet/20 text-center text-5xl leading-[5rem]">{selectedZone.icon}</div>
+                <div className="absolute bottom-5 left-1/2 h-20 w-20 -translate-x-1/2 animate-pet-walk rounded-full bg-white/70 shadow-[var(--shadow-glow)] ring-2 ring-white/80">
+                  <img src={petImg} alt={`${petName} andando pela casinha`} className="h-20 w-20 object-contain" />
+                </div>
+                <span className="absolute right-6 top-8 animate-float text-3xl">✨</span>
+                <span className="absolute left-8 top-20 animate-float text-2xl" style={{ animationDelay: "1s" }}>🧸</span>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {HOME_ZONES.map((zone) => (
+                <button
+                  key={zone.name}
+                  onClick={() => setSelectedZone(zone)}
+                  className={`rounded-2xl border p-4 text-left transition-all active:scale-95 ${selectedZone.name === zone.name ? "border-primary bg-primary/10" : "border-border bg-card"}`}
+                >
+                  <div className="text-3xl">{zone.icon}</div>
+                  <p className="mt-2 font-extrabold">{zone.name}</p>
+                  <p className="text-xs text-muted-foreground">{zone.details}</p>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {tab === "chat" && (
+          <section className="space-y-4">
+            <div className="rounded-3xl bg-[var(--gradient-pet)] p-6 text-pet-foreground shadow-[var(--shadow-pet)]">
+              <div className="flex items-center gap-2">
+                <MessageCircle className="h-5 w-5" />
+                <h2 className="text-xl font-bold">Conversar com {petName}</h2>
+              </div>
+              <p className="mt-1 text-sm opacity-90">Ela responde ao seu humor, fome, felicidade e limpeza</p>
+            </div>
+            <div className="min-h-[360px] space-y-3 rounded-2xl border border-border bg-card p-4">
+              {chatMessages.map((message) => (
+                <div key={message.id} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+                  <div className={`max-w-[82%] rounded-2xl px-4 py-2 text-sm font-medium ${message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}>
+                    {message.content}
+                  </div>
+                </div>
+              ))}
+              {chatLoading && <div className="text-sm font-semibold text-muted-foreground">{petName} está pensando…</div>}
+            </div>
+            <form
+              className="flex gap-2"
+              onSubmit={(e) => { e.preventDefault(); sendPetMessage(); }}
+            >
+              <input
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                maxLength={280}
+                placeholder="Fale com seu pet..."
+                className="min-w-0 flex-1 rounded-2xl border border-input bg-card px-4 py-3 text-sm outline-none ring-ring transition focus:ring-2"
+              />
+              <button
+                type="submit"
+                disabled={!chatInput.trim() || chatLoading}
+                className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-[var(--shadow-soft)] active:scale-95 disabled:opacity-50"
+                aria-label="Enviar mensagem"
+              >
+                <Send className="h-5 w-5" />
+              </button>
+            </form>
+          </section>
+        )}
+
         {tab === "missions" && (
           <section className="space-y-4">
             <div className="rounded-3xl bg-[var(--gradient-reward)] p-6 text-reward-foreground shadow-[var(--shadow-soft)]">
