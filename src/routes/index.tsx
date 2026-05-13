@@ -540,14 +540,15 @@ function Index() {
   };
 
   const useToy = (toy: ToyItem) => {
-    if (!ownedToys.includes(toy.id)) {
+    const wasOwned = ownedToys.includes(toy.id);
+    if (!wasOwned) {
       if (coins < toy.price) { playSound("alert"); toast.error("Moedas insuficientes"); return; }
       setCoins((c) => c - toy.price);
       setOwnedToys((items) => [...items, toy.id]);
       toast.success(`${toy.name} desbloqueado`);
     }
     setHappy((v) => clamp(v + toy.happy)); pulseStat("happy");
-    setCoins((c) => Math.max(0, c + toy.coins - (ownedToys.includes(toy.id) ? 0 : toy.price)));
+    setCoins((c) => Math.max(0, c + toy.coins));
     gainXp(toy.xp); spawnParticles(toy.icon, toy.id === "ufo" ? 12 : 6); playSound("pop"); triggerBounce();
     logAction("toy", `Brincou com ${toy.name} ${toy.icon}`, { happy: toy.happy, coins: toy.coins });
   };
