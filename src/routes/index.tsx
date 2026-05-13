@@ -47,6 +47,69 @@ const SHOP_ITEMS: Item[] = [
   { id: "spa", name: "Spa", icon: "✨", price: 60, effect: { clean: 60, happy: 20 } },
 ];
 
+type Rarity = "Comum" | "Raro" | "Épico" | "Lendário" | "Evento especial ✨";
+type ClothingCategory = "Camisas" | "Bonés" | "Óculos" | "Sapatos" | "Acessórios" | "Itens raros";
+
+interface ClothingItem {
+  id: string;
+  name: string;
+  icon: string;
+  category: ClothingCategory;
+  rarity: Rarity;
+  price: number;
+  buff: string;
+  colors: string[];
+  unlockLevel?: number;
+}
+
+const CLOTHING_ITEMS: ClothingItem[] = [
+  { id: "sport_tee", name: "Roupa esportiva", icon: "👕", category: "Camisas", rarity: "Comum", price: 0, buff: "+energia", colors: ["Azul", "Rosa", "Verde"] },
+  { id: "happy_cap", name: "Boné feliz", icon: "🧢", category: "Bonés", rarity: "Raro", price: 35, buff: "+felicidade", colors: ["Amarelo", "Azul", "Vermelho"] },
+  { id: "star_glasses", name: "Óculos estrela", icon: "👓", category: "Óculos", rarity: "Épico", price: 70, buff: "+XP", colors: ["Dourado", "Roxo", "Preto"], unlockLevel: 2 },
+  { id: "speed_shoes", name: "Tênis veloz", icon: "👟", category: "Sapatos", rarity: "Raro", price: 55, buff: "+mini-games", colors: ["Branco", "Neon", "Azul"] },
+  { id: "bow_party", name: "Laço festa", icon: "🎀", category: "Acessórios", rarity: "Evento especial ✨", price: 95, buff: "+moedas", colors: ["Rosa", "Lilás", "Dourado"], unlockLevel: 3 },
+  { id: "royal_crown", name: "Coroa real", icon: "👑", category: "Itens raros", rarity: "Lendário", price: 150, buff: "brilho especial", colors: ["Ouro", "Prata", "Safira"], unlockLevel: 4 },
+];
+
+interface ToyItem {
+  id: string;
+  name: string;
+  icon: string;
+  price: number;
+  effect: string;
+  happy: number;
+  xp: number;
+  coins: number;
+}
+
+const TOY_ITEMS: ToyItem[] = [
+  { id: "ball", name: "Bola", icon: "🎾", price: 0, effect: "animação de pulo", happy: 12, xp: 5, coins: 2 },
+  { id: "teddy", name: "Ursinho", icon: "🧸", price: 35, effect: "carinho extra", happy: 16, xp: 4, coins: 1 },
+  { id: "yoyo", name: "Io-iô", icon: "🪀", price: 45, effect: "combo de XP", happy: 10, xp: 9, coins: 2 },
+  { id: "car", name: "Carrinho", icon: "🚗", price: 60, effect: "corrida rápida", happy: 13, xp: 7, coins: 5 },
+  { id: "chew", name: "Mordedor", icon: "🦴", price: 25, effect: "acalma o pet", happy: 9, xp: 3, coins: 1 },
+  { id: "ufo", name: "Brinquedo futurista", icon: "🛸", price: 120, effect: "partículas sci-fi", happy: 20, xp: 12, coins: 8 },
+];
+
+const ACTIVITY_ITEMS = [
+  { id: "ball", name: "Jogar bola", icon: "🎾", mini: "pegar moedas", hunger: -6, happy: 18, clean: -4, xp: 8, coins: 5 },
+  { id: "run", name: "Correr", icon: "🏃", mini: "corrida", hunger: -10, happy: 14, clean: -6, xp: 10, coins: 4 },
+  { id: "sleep", name: "Dormir", icon: "💤", mini: "recuperação", hunger: -2, happy: 8, clean: 0, xp: 4, coins: 0 },
+  { id: "eat", name: "Comer", icon: "🍖", mini: "receitas", hunger: 22, happy: 5, clean: -2, xp: 5, coins: -8 },
+  { id: "bath", name: "Tomar banho", icon: "🚿", mini: "memória", hunger: 0, happy: 4, clean: 24, xp: 6, coins: -6 },
+  { id: "photo", name: "Tirar foto", icon: "📸", mini: "moda", hunger: 0, happy: 12, clean: 0, xp: 7, coins: 6 },
+  { id: "dance", name: "Dançar", icon: "🎵", mini: "parkour", hunger: -8, happy: 20, clean: -3, xp: 12, coins: 7 },
+];
+
+const HOME_ZONES = [
+  { name: "Quarto", icon: "🛏️", details: "cama, TV, brinquedos e decoração" },
+  { name: "Jardim", icon: "🌳", details: "árvores, piscina, céu animado e brinquedos externos" },
+  { name: "Cozinha", icon: "🍳", details: "alimentar pet e receitas especiais" },
+  { name: "Sala Gamer", icon: "🎮", details: "mini-games, computador e console" },
+];
+
+interface ChatMessage { id: string; role: "user" | "pet"; content: string; }
+
 interface Mission {
   id: string;
   label: string;
