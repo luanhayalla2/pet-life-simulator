@@ -525,6 +525,64 @@ function Index() {
     });
   };
 
+  const buyClothing = (item: ClothingItem) => {
+    if (item.unlockLevel && level < item.unlockLevel) { toast.error(`Desbloqueia no nível ${item.unlockLevel}`); return; }
+    if (ownedClothes.includes(item.id)) { setEquippedClothing(item.id); setSelectedColor(item.colors[0]); spawnParticles(item.icon, 5); return; }
+    if (coins < item.price) { playSound("alert"); toast.error("Moedas insuficientes"); return; }
+    setCoins((c) => c - item.price);
+    setOwnedClothes((items) => [...items, item.id]);
+    setEquippedClothing(item.id);
+    setSelectedColor(item.colors[0]);
+    spawnParticles(item.icon, 8); playSound("buy"); gainXp(item.rarity === "Lendário" ? 20 : 8);
+    logAction("clothing", `Equipou ${item.name} ${item.icon}`, { coins: -item.price, happy: 4 });
+    setHappy((v) => clamp(v + 4));
+    toast.success(`${item.name} equipado`, { description: `${item.buff} · ${item.rarity}` });
+  };
+
+  const useToy = (toy: ToyItem) => {
+    if (!ownedToys.includes(toy.id)) {
+      if (coins < toy.price) { playSound("alert"); toast.error("Moedas insuficientes"); return; }
+      setCoins((c) => c - toy.price);
+      setOwnedToys((items) => [...items, toy.id]);
+      toast.success(`${toy.name} desbloqueado`);
+    }
+    setHappy((v) => clamp(v + toy.happy)); pulseStat("happy");
+    setCoins((c) => Math.max(0, c + toy.coins - (ownedToys.includes(toy.id) ? 0 : toy.price)));
+    gainXp(toy.xp); spawnParticles(toy.icon, toy.id === "ufo" ? 12 : 6); playSound("pop"); triggerBounce();
+    logAction("toy", `Brincou com ${toy.name} ${toy.icon}`, { happy: toy.happy, coins: toy.coins });
+  };
+
+  const doActivity = (activity: (typeof ACTIVITY_ITEMS)[number]) => {
+    if (activity.coins < 0 && coins < Math.abs(activity.coins)) { playSound("alert"); toast.error("Moedas insuficientes"); return; }
+    setHunger((v) => clamp(v + activity.hunger));
+    setHappy((v) => clamp(v + activity.happy));
+    setClean((v) => clamp(v + activity.clean));
+    setCoins((c) => Math.max(0, c + activity.coins));
+    pulseStat(activity.clean > activity.happy ? "clean" : activity.hunger > activity.happy ? "hunger" : "happy");
+    gainXp(activity.xp); spawnParticles(activity.icon, 7); playSound(activity.coins > 0 ? "coin" : "yay"); triggerBounce();
+    logAction("activity", `${activity.name} · ${activity.mini}`, { hunger: activity.hunger, happy: activity.happy, clean: activity.clean, coins: activity.coins });
+  };
+
+  const sendPetMessage = async () => {
+    const text = chatInput.trim();
+    if (!text || chatLoading) return;
+    const userMessage: ChatMessage = { id: `u_${Date.now()}`, role: "user", content: text };
+    setChatMessages((msgs) => [...msgs, userMessage]);
+    setChatInput("");
+    setChatLoading(true);
+    try {
+      const result = await askPet({ data: { message: text, petName, mood: (happy + hunger + clean) / 3, hunger, happy, clean } });
+      setChatMessages((msgs) => [...msgs, { id: `p_${Date.now()}`, role: "pet", content: result.reply }]);
+      spawnParticles("💬", 4);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "O pet ficou sem resposta agora.";
+      setChatMessages((msgs) => [...msgs, { id: `p_${Date.now()}`, role: "pet", content: "Au... minha conexão falhou, tenta de novo? 🐾" }]);
+      toast.error(message);
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
   // ---------- RANDOM EVENTS ----------
   useEffect(() => {
     const id = setInterval(() => {
