@@ -213,6 +213,17 @@ function Index() {
   const [claimedMissions, setClaimedMissions] = useState<Mission[]>([]);
   const [showRewards, setShowRewards] = useState(false);
   const [loadingAction, setLoadingAction] = useState<null | "feed" | "play" | "wash">(null);
+  const [ownedClothes, setOwnedClothes] = useState<string[]>(["sport_tee"]);
+  const [equippedClothing, setEquippedClothing] = useState("sport_tee");
+  const [selectedColor, setSelectedColor] = useState("Azul");
+  const [ownedToys, setOwnedToys] = useState<string[]>(["ball"]);
+  const [selectedZone, setSelectedZone] = useState(HOME_ZONES[0]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    { id: "hello", role: "pet", content: "Oi! Eu sou a Mel. Bora brincar ou decorar minha casinha? 🐾" },
+  ]);
+  const [chatLoading, setChatLoading] = useState(false);
+  const askPet = useServerFn(talkToPet);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const lastEventRef = useRef<number>(Date.now());
@@ -338,6 +349,7 @@ function Index() {
   useEffect(() => {
     const save = { coins, hunger, happy, clean, xp, level, missions, missionsDate };
     localStorage.setItem("petlife_save", JSON.stringify(save));
+    localStorage.setItem("petlife_style", JSON.stringify({ ownedClothes, equippedClothing, selectedColor, ownedToys }));
     if (!userId) return;
     if (persistRef.current) clearTimeout(persistRef.current);
     persistRef.current = setTimeout(() => {
@@ -350,7 +362,19 @@ function Index() {
         missions_date: missionsDate,
       }, { onConflict: "user_id" }).then(() => {});
     }, 800);
-  }, [userId, coins, hunger, happy, clean, xp, level, missions, missionsDate]);
+  }, [userId, coins, hunger, happy, clean, xp, level, missions, missionsDate, ownedClothes, equippedClothing, selectedColor, ownedToys]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("petlife_style");
+      if (!raw) return;
+      const style = JSON.parse(raw);
+      if (Array.isArray(style.ownedClothes)) setOwnedClothes(style.ownedClothes);
+      if (typeof style.equippedClothing === "string") setEquippedClothing(style.equippedClothing);
+      if (typeof style.selectedColor === "string") setSelectedColor(style.selectedColor);
+      if (Array.isArray(style.ownedToys)) setOwnedToys(style.ownedToys);
+    } catch {}
+  }, []);
 
   // ---------- AUDIO ----------
   const playSound = useCallback((type: "coin" | "pop" | "yay" | "buy" | "alert") => {
